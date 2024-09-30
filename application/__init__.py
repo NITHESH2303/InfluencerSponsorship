@@ -4,12 +4,13 @@ from flask_security import Security, SQLAlchemyUserDatastore
 
 from application.database import *
 from application.models import *
+from route import init_app as init_routes
 
 
 def create_app():
     app = Flask(__name__)
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/nithesh-pt7363/Work/IITMBS/MAD2/Project/MAD2/mad2.sqlite3'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./mad2.sqlite3'
     app.config['SECRET_KEY'] = 'madthemad2'
     app.config['SECURITY_PASSWORD_SALT'] = 'madthemad2salt'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -22,9 +23,11 @@ def create_app():
     migrate = Migrate(app, db)
 
     with app.app_context():
-        print(f"Registered Models: {db.metadata.tables.keys()}")
         db.create_all()
+        print(f"Registered Models: {db.metadata.tables.keys()}")
 
     print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
+    init_routes(app)
 
     return app
