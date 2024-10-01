@@ -14,6 +14,9 @@ def create_app():
     app.config['SECRET_KEY'] = 'madthemad2'
     app.config['SECURITY_PASSWORD_SALT'] = 'madthemad2salt'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECURITY_CHANGEABLE'] = True
+    app.config['SECURITY_CHANGE_URL'] = '/change_password'
+    app.config['SECURITY_SEND_PASSWORD_CHANGE_EMAIL'] = True
 
     db.init_app(app)
 
