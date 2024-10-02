@@ -1,8 +1,16 @@
-from flask_restful import Resource, reqparse
-from flask_security import verify_password, auth_required, current_user
-from flask_jwt_extended import create_access_token
-from sqlalchemy import exc
 import re
+
+from flask import current_app
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    jwt_required,
+    get_jwt_identity,
+    get_jwt
+)
+from flask_restful import Resource, reqparse
+from flask_security import verify_password
+from sqlalchemy import exc
 
 from application.database import db
 from application.models import User
@@ -16,29 +24,33 @@ class AuthAPI(Resource):
         self.auth_input_fields.add_argument("identifier", type=str, required=True, help="Enter Your User Or Email")
         self.auth_input_fields.add_argument("password", type=str, required=True, help="Password is required")
 
-    @auth_required()
+    @jwt_required()
     def get(self):
         try:
-            user_data = current_user.to_dict(exclude=None)
-            return user_data
+            current_user_identity = get_jwt_identity()
+            user_data = User.query.filter_by(fs_uniquifier=current_user_identity).one()
+            return user_data.to_dict(exclude=None)
         except exc.NoResultFound:
             return unauthorized()
 
-    @auth_required()
+    @jwt_required()
     def put(self):
         args = self.auth_input_fields.parse_args()
         identifier = args["identifier"]
         password = args["password"]
         try:
-            if not verify_password(password, current_user.password):
+            user = User.query.filter_by(fs_uniquifier=get_jwt_identity()).one()
+            if not verify_password(password, user.password):
                 return validation_error("Incorrect Password")
             if identifier:
                 if '@' in identifier and re.match(r"[^@]+@[^@]+\.[^@]+", identifier):
-                    current_user.email = identifier
+                    user.email = identifier
                 else:
-                    current_user.username = identifier
+                    user.username = identifier
                 db.session.commit()
                 return create_response("Username/Email updated successfully", 200)
+        except exc.NoResultFound:
+            return unauthorized()
         except Exception as e:
             return forbidden()
 
@@ -58,12 +70,30 @@ class AuthAPI(Resource):
             return user_not_found(identifier, inp_type)
         else:
             if verify_password(password, user.password):
-                token = create_access_token(identity=user.fs_uniquifier, fresh=True)
+                access_token = create_access_token(identity=user.fs_uniquifier)
+                refresh_token = create_refresh_token(identity=user.fs_uniquifier)
                 user_data = user.to_dict(exclude=None)
                 response = {
-                    "token": token,
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
                     "user": user_data
                 }
                 return create_response("Login successful", 200, response)
             else:
                 return validation_error("Incorrect Password")
+
+    @jwt_required(refresh=True)
+    def patch(self):
+        current_user_identity = get_jwt_identity()
+        new_access_token = create_access_token(identity=current_user_identity)
+        return create_response("Token refreshed successfully", 200, {"access_token": new_access_token})
+
+    @jwt_required(refresh=True)
+    def delete(self):
+        jti = get_jwt()["jti"]
+        self.add_token_to_blacklist(jti, expires_in=300)
+        return create_response("Successfully logged out", 200)
+
+    def add_token_to_blacklist(self, jti, expires_in):
+        redis_client = current_app.redis_client
+        redis_client.setex(f"blacklist:{jti}", expires_in, 'true')
