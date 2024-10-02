@@ -33,6 +33,7 @@ class Role(Model):
 class User(Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(255), unique=True, nullable=False)
     first_name = db.Column(db.String, nullable=False)
     last_name = db.Column(db.String)
     email = db.Column(db.String, unique=True, nullable=False, index=True)
@@ -46,6 +47,7 @@ class User(Model):
         exclude = exclude or []
         data = {
             "id": self.id,
+            "username": self.username,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "email": self.email,
@@ -58,7 +60,8 @@ class User(Model):
 class Sponsor(Model):
     __tablename__ = 'sponsor'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE', name='fk_sponsor_user_id'), nullable=False)
+    user_name = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_sponsor_user_name'), nullable=False)
     company_name = db.Column(db.String, nullable=False)
     industry_type = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
@@ -68,8 +71,8 @@ class Sponsor(Model):
 class Influencer(Model):
     __tablename__ = 'influencer'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user_name = db.Column(db.String, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE', name='fk_influencer_user_id'), nullable=False)
+    user_name = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_influencer_user_name'), nullable=False)
     about = db.Column(db.String, default="")
     followers = db.Column(db.Integer, nullable=False)
     category = db.Column(db.String, nullable=False)

@@ -3,7 +3,7 @@ from flask_security import verify_password, auth_required, current_user
 from flask_jwt_extended import create_access_token
 from sqlalchemy import exc
 import re
-flask_security.change_email
+
 from application.database import db
 from application.models import User
 from application.response import *
