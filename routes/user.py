@@ -9,3 +9,5 @@ class UserAPI(Resource):
         self.user_input_fields.add_argument("last_name", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("email", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("password", required=True, help="This field cannot be blank.")
+
+    def get(self):

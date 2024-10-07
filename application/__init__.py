@@ -43,6 +43,7 @@ def create_app():
     app.redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
     jwt = JWTManager(app)
+    app.jwt = jwt
 
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     security = Security(app, user_datastore)
@@ -57,7 +58,7 @@ def create_app():
 
     init_routes(app)
 
-    @jwt.token_in_blocklist_loader
+    @app.jwt.token_in_blocklist_loader()
     def check_if_token_in_blacklist(jwt_payload):
         jti = jwt_payload['jti']
         return app.redis_client.get(f"blacklist:{jti}") is not None
