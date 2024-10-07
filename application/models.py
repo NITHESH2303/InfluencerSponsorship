@@ -1,6 +1,7 @@
 from application.database import db
 from datetime import datetime
 from enum import Enum
+from validations.UserValidation import UserValidation
 
 
 class Model(db.Model):
@@ -42,6 +43,15 @@ class User(Model):
     image = db.Column(db.String, nullable=True)
     role = db.relationship('Role', secondary='user_roles', backref='user', lazy='dynamic')
     fs_uniquifier = db.Column(db.String(64), nullable=False, unique=True)
+
+    def add_role(self, role):
+        current_roles = [role.name for role in self.role]
+        UserValidation.validate_role_assignment(current_roles, role)
+        new_role = Role.query.filter_by(name=role).first()
+        if new_role:
+            self.role.append(new_role)
+        else:
+            raise ValueError('Role with name "{}" does not exist'.format(role))
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
