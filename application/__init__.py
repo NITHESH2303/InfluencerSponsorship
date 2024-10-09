@@ -1,3 +1,5 @@
+import secrets
+
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
@@ -15,7 +17,8 @@ def create_app():
 
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./mad2.sqlite3'
     app.config['SECRET_KEY'] = 'madthemad2'
-    app.config['SECURITY_PASSWORD_SALT'] = 'madthemad2salt'
+    app.config['SECURITY_PASSWORD_SALT'] = secrets.token_urlsafe(16)
+    app.config['SECURITY_PASSWORD_HASH'] = 'argon2'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     app.config['SECURITY_CHANGEABLE'] = True

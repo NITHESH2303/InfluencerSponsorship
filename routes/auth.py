@@ -15,7 +15,7 @@ from sqlalchemy import exc
 from application.database import db
 from application.models import User
 from application.response import *
-
+from application.event_listeners import *
 
 class AuthAPI(Resource):
 
@@ -40,7 +40,7 @@ class AuthAPI(Resource):
         password = args["password"]
         try:
             user = User.query.filter_by(fs_uniquifier=get_jwt_identity()).one()
-            if not verify_password(password, user.password):
+            if not verify_password(password, user.password_hash):
                 return validation_error("Incorrect Password")
             if identifier:
                 if '@' in identifier and re.match(r"[^@]+@[^@]+\.[^@]+", identifier):
@@ -49,6 +49,10 @@ class AuthAPI(Resource):
                     user.username = identifier
                 db.session.commit()
                 return create_response("Username/Email updated successfully", 200)
+            if not identifier and password:
+                user.password_hash = user.set_password(password)
+                db.session.commit()
+                return create_response("Password updated successfully", 200)
         except exc.NoResultFound:
             return unauthorized()
         except Exception as e:
@@ -69,9 +73,9 @@ class AuthAPI(Resource):
         except exc.NoResultFound:
             return user_not_found(identifier, inp_type)
         else:
-            if verify_password(password, user.password):
-                user_roles = [role.name for role in user.roles]
-                access_token = create_access_token(identity=user.fs_uniquifier, additional_claims=user_roles)
+            if verify_password(password, user.password_hash):
+                user_roles = user.role
+                access_token = create_access_token(identity=user.fs_uniquifier, additional_claims={"role": user_roles})
                 refresh_token = create_refresh_token(identity=user.fs_uniquifier)
                 user_data = user.to_dict(exclude=None)
                 response = {
