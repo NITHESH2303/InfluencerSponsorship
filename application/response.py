@@ -45,5 +45,5 @@ def forbidden():
     return create_response("Access forbidden", 403)
 
 
-def internal_server_error():
-    return create_response("An internal server error occurred", 500)
+def internal_server_error(exception):
+    return create_response(f"An internal server error occurred : {exception}", 500)

@@ -1,3 +1,6 @@
+from flask_security import verify_password, hash_password
+from sqlalchemy import event
+
 from application.database import db
 from datetime import datetime
 from enum import Enum
@@ -38,20 +41,30 @@ class User(Model):
     first_name = db.Column(db.String, nullable=False)
     last_name = db.Column(db.String)
     email = db.Column(db.String, unique=True, nullable=False, index=True)
-    password = db.Column(db.String, nullable=False)
+    password_hash = db.Column(db.String, nullable=False)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
     image = db.Column(db.String, nullable=True)
-    role = db.relationship('Role', secondary='user_roles', backref='user', lazy='dynamic')
+    role = db.Column(db.JSON, nullable=False, default=list)
     fs_uniquifier = db.Column(db.String(64), nullable=False, unique=True)
+    is_deleted = db.Column(db.Boolean, default=False)
+    deleted_on = db.Column(db.DateTime, default=None)
+    restored_on = db.Column(db.DateTime, default=None)
+    deletion_count = db.Column(db.Integer, default=0)
 
     def add_role(self, role):
-        current_roles = [role.name for role in self.role]
+        current_roles = self.role
         UserValidation.validate_role_assignment(current_roles, role)
         new_role = Role.query.filter_by(name=role).first()
         if new_role:
             self.role.append(new_role)
         else:
             raise ValueError('Role with name "{}" does not exist'.format(role))
+
+    def verify_password(self, password):
+        return verify_password(password, self.password_hash)
+
+    def set_password(self, password):
+        self.password_hash = hash_password(password)
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
