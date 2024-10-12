@@ -13,9 +13,9 @@ from flask_security import verify_password
 from sqlalchemy import exc
 
 from application.database import db
-from application.models import User
-from application.response import *
 from application.event_listeners import *
+from application.response import *
+
 
 class AuthAPI(Resource):
 
@@ -23,6 +23,7 @@ class AuthAPI(Resource):
         self.auth_input_fields = reqparse.RequestParser()
         self.auth_input_fields.add_argument("identifier", type=str, required=True, help="Enter Your User Or Email")
         self.auth_input_fields.add_argument("password", type=str, required=True, help="Password is required")
+        self.auth_input_fields.add_argument("new_password", type=str, help="Enter your new password")
 
     @jwt_required()
     def get(self):
@@ -38,24 +39,31 @@ class AuthAPI(Resource):
         args = self.auth_input_fields.parse_args()
         identifier = args["identifier"]
         password = args["password"]
+        new_password = args["new_password"]
         try:
             user = User.query.filter_by(fs_uniquifier=get_jwt_identity()).one()
             if not verify_password(password, user.password_hash):
                 return validation_error("Incorrect Password")
             if identifier:
-                if '@' in identifier and re.match(r"[^@]+@[^@]+\.[^@]+", identifier):
-                    user.email = identifier
+                existing_user = User.query.filter_by(email=identifier).first()
+                if existing_user:
+                    return validation_error("Email Already Exists")
                 else:
-                    user.username = identifier
-                db.session.commit()
-                return create_response("Username/Email updated successfully", 200)
-            if not identifier and password:
+                    if '@' in identifier and re.match(r"[^@]+@[^@]+\.[^@]+", identifier):
+                        user.email = identifier
+                    else:
+                        return validation_error("Invalid Email")
+                    return create_response("Email updated successfully", 200)
+
+            if new_password:
                 user.password_hash = user.set_password(password)
-                db.session.commit()
-                return create_response("Password updated successfully", 200)
+
+            db.session.commit()
+            return create_response("Password updated successfully", 200)
         except exc.NoResultFound:
             return unauthorized()
         except Exception as e:
+            db.session.rollback()
             return forbidden()
 
     def post(self):

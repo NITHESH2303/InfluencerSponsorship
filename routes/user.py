@@ -55,7 +55,7 @@ class UserAPI(Resource):
     @jwt_required
     def put(self):
         args = self.user_input_fields.parse_args()
-        username = args['user_name']
+        user_name = args['user_name']
         first_name = args['first_name']
         last_name = args['last_name']
 
@@ -64,13 +64,16 @@ class UserAPI(Resource):
             updated_fields = {}
 
             fields = {
-                "user_name": username,
+                "user_name": user_name,
                 "first_name": first_name,
                 "last_name": last_name,
             }
 
             for field, value in fields.items():
                 if getattr(user, field) != value:
+                    if field == "user_name":
+                        if User.query.filter_by(user_name=value).first():
+                            return duplicate_entry("UserName")
                     setattr(user, field, value)
                     updated_fields[field] = value
 
