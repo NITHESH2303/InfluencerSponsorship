@@ -8,7 +8,7 @@ from flask_caching import Cache
 import redis
 
 from application.database import *
-from application.models import *
+from application.models import User, Role
 from route import init_app as init_routes
 
 
@@ -61,7 +61,7 @@ def create_app():
 
     init_routes(app)
 
-    @app.jwt.token_in_blocklist_loader()
+    @app.jwt.token_in_blocklist_loader
     def check_if_token_in_blacklist(jwt_payload):
         jti = jwt_payload['jti']
         return app.redis_client.get(f"blacklist:{jti}") is not None
