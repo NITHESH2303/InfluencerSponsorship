@@ -33,8 +33,8 @@ def validation_error(message):
     return create_response(f"Validation error: {message}", 400)
 
 
-def duplicate_entry(resource_name):
-    return create_response(f"Duplicate entry for {resource_name}", 409)
+def duplicate_entry(resource_name, error):
+    return create_response(f"Duplicate entry for {resource_name} with Exception : {error}", 409)
 
 
 def unauthorized():

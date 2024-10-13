@@ -1,9 +1,9 @@
-from flask_security import verify_password, hash_password
-from sqlalchemy import event
-
-from application.database import db
 from datetime import datetime
 from enum import Enum
+
+from flask_security import verify_password, hash_password, UserMixin
+
+from application.database import db
 from validations.UserValidation import UserValidation
 
 
@@ -34,7 +34,7 @@ class Role(Model):
     description = db.Column(db.String(255), unique=True)
 
 
-class User(Model):
+class User(Model, UserMixin):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(255), unique=True, nullable=False)
@@ -44,8 +44,8 @@ class User(Model):
     password_hash = db.Column(db.String, nullable=False)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
     image = db.Column(db.String, nullable=True)
-    role = db.Column(db.JSON, nullable=False, default=list)
-    fs_uniquifier = db.Column(db.String(64), nullable=False, unique=True)
+    role = db.Column(db.JSON, nullable=True, default=list)
+    fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False)
     deleted_on = db.Column(db.DateTime, default=None)
     restored_on = db.Column(db.DateTime, default=None)

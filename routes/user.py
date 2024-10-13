@@ -1,5 +1,5 @@
-from flask_restful import reqparse, Resource
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_restful import reqparse, Resource
 from sqlalchemy import exc
 
 from application import User, db
@@ -10,25 +10,31 @@ from validations.UserValidation import UserValidation
 class UserAPI(Resource):
     def __init__(self):
         self.user_input_fields = reqparse.RequestParser()
-        self.user_input_fields.add_argument("user_name", required=True, help="This field cannot be blank.")
+        self.user_input_fields.add_argument("username", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("first_name", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("last_name", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("email", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("password", required=True, help="This field cannot be blank.")
 
+    @jwt_required()
     def get(self, user_id=None):
         current_user = get_jwt_identity()
+        # print(f"Current User JWT: {current_user}")
         try:
-            user = User.query.filter_by(fs_uniquifier=current_user).one() if current_user else User.query.get(user_id)
+            user = User.query.get(user_id)
             if not user:
-                return unauthorized()
-            return user.to_dict(), 200
+                return create_response("User not found", 404)
+            # TODO : Implement private user feature
+            # if user.is_private:
+            #     if user.fs_uniquifier != current_user:
+            #         return create_response("This profile is private", 403)
+            return create_response(user.to_dict(), 200)
         except exc.NoResultFound:
             return unauthorized()
 
     def post(self):
         args = self.user_input_fields.parse_args()
-        username = args['user_name']
+        username = args['username']
         first_name = args['first_name']
         last_name = args['last_name']
         email = args['email']
@@ -37,10 +43,11 @@ class UserAPI(Resource):
         UserValidation.check_for_existing_user(username, email)
 
         new_user = User(
-            user_name=username,
+            username=username,
             first_name=first_name,
             last_name=last_name,
             email=email,
+            # fs_uniquifier=str(uuid.uuid4())
         )
         new_user.set_password(password)
 
@@ -48,14 +55,14 @@ class UserAPI(Resource):
             db.session.add(new_user)
             db.session.commit()
             return created(new_user.to_dict())
-        except exc.IntegrityError:
+        except exc.IntegrityError as e:
             db.session.rollback()
-            return duplicate_entry("User")
+            return duplicate_entry("User", e)
 
     @jwt_required
     def put(self):
         args = self.user_input_fields.parse_args()
-        user_name = args['user_name']
+        username = args['username']
         first_name = args['first_name']
         last_name = args['last_name']
 
@@ -64,15 +71,15 @@ class UserAPI(Resource):
             updated_fields = {}
 
             fields = {
-                "user_name": user_name,
+                "username": username,
                 "first_name": first_name,
                 "last_name": last_name,
             }
 
             for field, value in fields.items():
                 if getattr(user, field) != value:
-                    if field == "user_name":
-                        if User.query.filter_by(user_name=value).first():
+                    if field == "username":
+                        if User.query.filter_by(username=value).first():
                             return duplicate_entry("UserName")
                     setattr(user, field, value)
                     updated_fields[field] = value

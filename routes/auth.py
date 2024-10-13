@@ -56,7 +56,7 @@ class AuthAPI(Resource):
                     return create_response("Email updated successfully", 200)
 
             if new_password:
-                user.password_hash = user.set_password(password)
+                user.password_hash = user.set_password(new_password)
 
             db.session.commit()
             return create_response("Password updated successfully", 200)

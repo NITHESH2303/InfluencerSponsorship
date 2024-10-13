@@ -9,7 +9,7 @@ import redis
 
 from application.database import *
 from application.models import User, Role
-from route import init_app as init_routes
+from routes.blueprint import init_app as init_routes 
 
 
 def create_app():
