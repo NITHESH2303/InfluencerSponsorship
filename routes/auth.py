@@ -26,15 +26,6 @@ class AuthAPI(Resource):
         self.auth_input_fields.add_argument("new_password", type=str, help="Enter your new password")
 
     @jwt_required()
-    def get(self):
-        try:
-            current_user_identity = get_jwt_identity()
-            user_data = User.query.filter_by(fs_uniquifier=current_user_identity).one()
-            return user_data.to_dict(exclude=None)
-        except exc.NoResultFound:
-            return unauthorized()
-
-    @jwt_required()
     def put(self):
         args = self.auth_input_fields.parse_args()
         identifier = args["identifier"]

@@ -1,6 +1,7 @@
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import reqparse, Resource
 from sqlalchemy import exc
+from wtforms.validators import email
 
 from application import User, db
 from application.response import unauthorized, created, create_response, success, duplicate_entry, internal_server_error
@@ -16,21 +17,30 @@ class UserAPI(Resource):
         self.user_input_fields.add_argument("email", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("password", required=True, help="This field cannot be blank.")
 
-    @jwt_required()
-    def get(self, user_id=None):
-        current_user = get_jwt_identity()
-        # print(f"Current User JWT: {current_user}")
+    @jwt_required(optional=True)
+    def get(self, username=None):
         try:
-            user = User.query.get(user_id)
+            user = User.query.filter_by(username=username).one()
             if not user:
                 return create_response("User not found", 404)
-            # TODO : Implement private user feature
+
+            current_user = get_jwt_identity()
+
+            if current_user:
+                return success(user.to_dict())
+
+            else:
+                return success(user.to_dict(exclude=['id', 'email', 'role']))
+
+            # TODO : Implement private profile feature
             # if user.is_private:
             #     if user.fs_uniquifier != current_user:
             #         return create_response("This profile is private", 403)
-            return create_response(user.to_dict(), 200)
-        except exc.NoResultFound:
-            return unauthorized()
+
+        except Exception as e:
+            return create_response(f"Error processing request with Exception : {e}", 500)
+
+
 
     def post(self):
         args = self.user_input_fields.parse_args()

@@ -14,7 +14,7 @@ api.add_resource(AuthAPI, '/api/auth/logout', methods=['DELETE'], endpoint='auth
 
 # UserAPI routes with unique endpoints
 api.add_resource(UserAPI, '/api/user/signup', methods=['POST'], endpoint='user_signup')           # Sign up
-api.add_resource(UserAPI, '/api/user/profile', methods=['GET', 'PUT'], endpoint='user_profile')    # Profile management (GET for fetching profile, PUT for updating profile)
+api.add_resource(UserAPI, '/api/user/profile/<string:username>', methods=['GET', 'PUT'], endpoint='user_profile')    # Profile management (GET for fetching profile, PUT for updating profile)
 api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user_delete')         # Soft delete account
 
 def init_app(app):
