@@ -1,7 +1,6 @@
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, exceptions, verify_jwt_in_request
 from flask_restful import reqparse, Resource
 from sqlalchemy import exc
-from wtforms.validators import email
 
 from application import User, db
 from application.response import unauthorized, created, create_response, success, duplicate_entry, internal_server_error
@@ -24,7 +23,11 @@ class UserAPI(Resource):
             if not user:
                 return create_response("User not found", 404)
 
-            current_user = get_jwt_identity()
+            try:
+                verify_jwt_in_request(optional=True)
+                current_user = get_jwt_identity()
+            except exceptions.RevokedTokenError:
+                current_user = None
 
             if current_user:
                 return success(user.to_dict())
