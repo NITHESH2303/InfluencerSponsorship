@@ -27,17 +27,22 @@ def create_app():
     app.config['SECURITY_EMAIL_SUBJECT_PASSWORD_CHANGE_NOTICE'] = "Your email has been changed"
 
     app.config['JWT_SECRET_KEY'] = 'MadTheMad2'
-    app.config['JWT_TOKEN_LOCATION'] = ['headers']
+    app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
+    app.config['JWT_COOKIE_SECURE'] = False
+    app.config['JWT_REFRESH_TOKEN_IN_COOKIE'] = True
+    app.config['JWT_REFRESH_COOKIE_NAME'] = 'refresh_token'
     app.config['JWT_HEADER_NAME'] = 'Authorization'
     app.config['JWT_HEADER_TYPE'] = 'Bearer'
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+    # TODO : configure for CSFR
+    app.config['JWT_COOKIE_CSRF_PROTECT'] = False
 
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_PORT'] = 6379
     app.config['CACHE_REDIS_DB'] = 0
     app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
-    app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+    app.config['CACHE_DEFAULT_TIMEOUT'] = 1800
 
     cache = Cache(app=app)
 

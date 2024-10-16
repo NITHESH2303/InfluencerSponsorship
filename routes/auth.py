@@ -1,6 +1,6 @@
 import re
 
-from flask import current_app
+from flask import current_app, request
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -76,27 +76,39 @@ class AuthAPI(Resource):
                 user_roles = user.role
                 access_token = create_access_token(identity=user.fs_uniquifier, additional_claims={"role": user_roles})
                 refresh_token = create_refresh_token(identity=user.fs_uniquifier)
-                user_data = user.to_dict(exclude=None)
-                response = {
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "user": user_data
+
+                data = {
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
+                    'user' : user.to_dict()
                 }
-                return create_response("Login successful", 200, response)
+
+                response = create_response("Login successful", 200, data)
+                response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True)
+
+                return response
             else:
                 return validation_error("Incorrect Password")
 
     @jwt_required(refresh=True)
     def patch(self):
         current_user_identity = get_jwt_identity()
+        refresh_token = request.cookies.get("refresh_token")
+        if not refresh_token:
+            return validation_error("Refresh Token not found")
         new_access_token = create_access_token(identity=current_user_identity)
         return create_response("Token refreshed successfully", 200, {"access_token": new_access_token})
 
-    @jwt_required(refresh=True)
+    @jwt_required()
     def delete(self):
-        jti = get_jwt()["jti"]
-        self.add_token_to_blacklist(jti, expires_in=300)
-        return create_response("Successfully logged out", 200)
+        try:
+            jti = get_jwt()["jti"]
+            self.add_token_to_blacklist(jti, expires_in=300)
+            response =  create_response("Successfully logged out", 200)
+            response.delete_cookie("refresh_token")
+            return response
+        except Exception as e:
+            return internal_server_error(e)
 
     def add_token_to_blacklist(self, jti, expires_in):
         redis_client = current_app.redis_client
