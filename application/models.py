@@ -1,10 +1,11 @@
 from datetime import datetime
 from enum import Enum
 
-from flask_security import verify_password, hash_password, UserMixin
+from flask import current_app
+from flask_security import verify_password, hash_password, UserMixin, RoleMixin
 
 from application.database import db
-from validations.UserValidation import UserValidation
+from validations.RoleValidations import RoleValidations
 
 
 class Model(db.Model):
@@ -27,7 +28,7 @@ class UserRoles(Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
 
-class Role(Model):
+class Role(Model, RoleMixin):
     __tablename__ = 'role'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True)
@@ -44,7 +45,7 @@ class User(Model, UserMixin):
     password_hash = db.Column(db.String, nullable=False)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
     image = db.Column(db.String, nullable=True)
-    role = db.Column(db.JSON, nullable=True, default=list)
+    roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'))
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False)
     deleted_on = db.Column(db.DateTime, default=None)
@@ -52,13 +53,27 @@ class User(Model, UserMixin):
     deletion_count = db.Column(db.Integer, default=0)
 
     def add_role(self, role):
-        current_roles = self.role
-        UserValidation.validate_role_assignment(current_roles, role)
+        current_roles = self.get_cached_role_names()
+        RoleValidations.validate_role_assignment(current_roles, role)
         new_role = Role.query.filter_by(name=role).first()
         if new_role:
             self.role.append(new_role)
+            self.invalidate_role_cache()
         else:
             raise ValueError('Role with name "{}" does not exist'.format(role))
+
+    def get_cached_role_names(self):
+        cached_roles = current_app.redis_client.get(f'user_roles:{self.id}')
+
+        if cached_roles:
+            return cached_roles.split(',')
+        else:
+            role_names = [role.name for role in self.role]
+            current_app.redis_client.set(f'user_roles:{self.id}', ','.join(role_names), ex=3600)
+            return role_names
+
+    def invalidate_role_cache(self):
+        current_app.redis_client.delete(f'user_roles:{self.id}')
 
     def verify_password(self, password):
         return verify_password(password, self.password_hash)
