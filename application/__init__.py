@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_security import Security, SQLAlchemyUserDatastore
 
+from application.PreProcess import PreProcess
 from application.database import *
 from application.models import User, Role
 from routes.blueprint import init_app as init_routes
@@ -21,8 +22,6 @@ def create_app():
 
     app.config['SECURITY_CHANGEABLE'] = True
     app.config['SECURITY_CHANGE_URL'] = '/change_password'
-    app.config['SECURITY_SEND_PASSWORD_CHANGE_EMAIL'] = True
-    app.config['SECURITY_CHANGEABLE'] = True
     app.config['SECURITY_SEND_PASSWORD_CHANGE_EMAIL'] = True
     app.config['SECURITY_EMAIL_SUBJECT_PASSWORD_CHANGE_NOTICE'] = "Your email has been changed"
 
@@ -62,6 +61,7 @@ def create_app():
     with app.app_context():
         db.create_all()
         print(f"Registered Models: {db.metadata.tables.keys()}")
+        PreProcess()
 
     print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
