@@ -1,7 +1,9 @@
 from flask_restful import Api
 from flask import Blueprint
 
+from routes.adminOperations import AdminOperations
 from routes.auth import AuthAPI
+from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
 
 route_bp = Blueprint('routes', __name__)
@@ -16,6 +18,12 @@ api.add_resource(AuthAPI, '/api/auth/logout', methods=['DELETE'], endpoint='auth
 api.add_resource(UserAPI, '/api/user/signup', methods=['POST'], endpoint='user_signup')           # Sign up
 api.add_resource(UserAPI, '/api/user/profile/<string:username>', methods=['GET', 'PUT'], endpoint='user_profile')    # Profile management (GET for fetching profile, PUT for updating profile)
 api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user_delete')         # Soft delete account
+
+# SponsorAPI routes
+api.add_resource(SponsorAPI, '/api/sponsor/register', methods=['POST'], endpoint='sponsor_register')
+
+# AdminAPI routes
+api.add_resource(AdminOperations,'/api/admin/operation/approve_sponsor/<int:sponsor_id>', methods=['POST'], endpoint='admin_approve_sponsor')
 
 def init_app(app):
     app.register_blueprint(route_bp)

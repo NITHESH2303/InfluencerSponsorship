@@ -99,11 +99,25 @@ class Sponsor(Model):
     __tablename__ = 'sponsor'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE', name='fk_sponsor_user_id'), nullable=False)
-    user_name = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_sponsor_user_name'), nullable=False)
+    username = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_sponsor_user_name'), nullable=False)
     company_name = db.Column(db.String, nullable=False)
     industry_type = db.Column(db.String, nullable=False)
-    description = db.Column(db.String, nullable=False)
+    description = db.Column(db.String)
+    status = db.Column(db.Integer, default=0)
     campaigns = db.relationship('Campaign', backref='sponsor', lazy=True)
+
+    def to_dict(self, exclude=None):
+        exclude = exclude or []
+        data = {
+            "user_id": self.id,
+            "username": self.username,
+            "company_name": self.company_name,
+            "industry_type": self.industry_type,
+            "description": self.description,
+            "status": self.status,
+        }
+        return {key: val for key, val in data.items() if key not in exclude}
+
 
 
 class Influencer(Model):
