@@ -1,10 +1,11 @@
-from flask_restful import Api
 from flask import Blueprint
+from flask_restful import Api
 
 from routes.adminOperations import AdminOperations
 from routes.auth import AuthAPI
 from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
+from routes.admin import AdminAPI
 
 route_bp = Blueprint('routes', __name__)
 api = Api(route_bp)
@@ -24,6 +25,7 @@ api.add_resource(SponsorAPI, '/api/sponsor/register', methods=['POST'], endpoint
 
 # AdminAPI routes
 api.add_resource(AdminOperations,'/api/admin/operation/approve_sponsor/<int:sponsor_id>', methods=['POST'], endpoint='admin_approve_sponsor')
+api.add_resource(AdminAPI, '/api/admin/overview', methods=['GET'], endpoint='admin_overview')
 
 def init_app(app):
     app.register_blueprint(route_bp)

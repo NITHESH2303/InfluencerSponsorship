@@ -1,12 +1,23 @@
-from flask_security import roles_required
+from functools import wraps
+
+from flask import g
 
 
+class Decorators:
+    @staticmethod
+    def class_roles_required(role):
+        def decorator(cls):
+            for attr in dir(cls):
+                original_method = getattr(cls, attr)
+                if callable(original_method) and not attr.startswith("__"):
+                    @wraps(original_method)
+                    def wrapped_method(*args, **kwargs):
+                        # Check if there is a user in the context
+                        if g.user and g.user.has_role(role):
+                            return original_method(*args, **kwargs)
+                        return {"message": "Access denied"}, 403  # Or handle as needed
 
-def class_roles_required(role):
-    def decorator(cls):
-        for attr in dir(cls):
-            if callable(getattr(cls, attr)) and not attr.startswith("__"):
-                method = getattr(cls, attr)
-                setattr(cls, attr, roles_required(role)(method))
-        return cls
-    return decorator
+                    # Replace the method with the wrapped one
+                    setattr(cls, attr, wrapped_method)
+            return cls
+        return decorator

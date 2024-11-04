@@ -73,7 +73,7 @@ class AuthAPI(Resource):
             return user_not_found(identifier, inp_type)
         else:
             if verify_password(password, user.password_hash):
-                user_roles = user.role
+                user_roles = user.roles
                 access_token = create_access_token(identity=user.fs_uniquifier, additional_claims={"role": user_roles})
                 refresh_token = create_refresh_token(identity=user.fs_uniquifier)
 

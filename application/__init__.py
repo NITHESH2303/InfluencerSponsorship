@@ -1,6 +1,7 @@
 import redis
 from flask import Flask
 from flask_caching import Cache
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_security import Security, SQLAlchemyUserDatastore
@@ -43,10 +44,9 @@ def create_app():
     app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
     app.config['CACHE_DEFAULT_TIMEOUT'] = 1800
 
-    cache = Cache(app=app)
+    CORS(app)
 
-    db.init_app(app)
-    cache.init_app(app)
+    cache = Cache(app=app)
 
     app.redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
@@ -59,13 +59,14 @@ def create_app():
     migrate = Migrate(app, db)
 
     with app.app_context():
+        db.init_app(app)
+        cache.init_app(app)
+        init_routes(app)
         db.create_all()
         print(f"Registered Models: {db.metadata.tables.keys()}")
         PreProcess()
 
     print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
-
-    init_routes(app)
 
     @app.jwt.token_in_blocklist_loader
     def check_if_token_in_blacklist(jwt_header, jwt_payload):

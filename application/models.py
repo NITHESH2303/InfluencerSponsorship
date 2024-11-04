@@ -90,7 +90,7 @@ class User(Model, UserMixin):
             "last_name": self.last_name,
             "email": self.email,
             "image": self.image,
-            "role": self.role
+            "role": self.roles
         }
         return {key: val for key, val in data.items() if key not in exclude}
 

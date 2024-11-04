@@ -11,8 +11,8 @@ class UserAPI(Resource):
     def __init__(self):
         self.user_input_fields = reqparse.RequestParser()
         self.user_input_fields.add_argument("username", required=True, help="This field cannot be blank.")
-        self.user_input_fields.add_argument("first_name", required=True, help="This field cannot be blank.")
-        self.user_input_fields.add_argument("last_name", required=True, help="This field cannot be blank.")
+        self.user_input_fields.add_argument("firstname", required=True, help="This field cannot be blank.")
+        self.user_input_fields.add_argument("lastname", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("email", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("password", required=True, help="This field cannot be blank.")
 
@@ -48,8 +48,8 @@ class UserAPI(Resource):
     def post(self):
         args = self.user_input_fields.parse_args()
         username = args['username']
-        first_name = args['first_name']
-        last_name = args['last_name']
+        first_name = args['firstname']
+        last_name = args['lastname']
         email = args['email']
         password = args['password']
 
