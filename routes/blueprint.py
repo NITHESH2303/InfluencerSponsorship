@@ -1,8 +1,11 @@
+from crypt import methods
+
 from flask import Blueprint
 from flask_restful import Api
 
-from routes.adminOperations import AdminOperations
+from routes.adminOperationsAPI import AdminOperationsAPI
 from routes.auth import AuthAPI
+from routes.influencer import InfluencerAPI
 from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
 from routes.admin import AdminAPI
@@ -21,10 +24,13 @@ api.add_resource(UserAPI, '/api/user/profile/<string:username>', methods=['GET',
 api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user_delete')         # Soft delete account
 
 # SponsorAPI routes
-api.add_resource(SponsorAPI, '/api/sponsor/register', methods=['POST'], endpoint='sponsor_register')
+api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['POST'], endpoint='sponsor_register')
+
+# InfluencerAPI routes
+api.add_resource(InfluencerAPI, '/api/register/influencer', methods=['POST'], endpoint='influencer_register')
 
 # AdminAPI routes
-api.add_resource(AdminOperations,'/api/admin/operation/approve_sponsor/<int:sponsor_id>', methods=['POST'], endpoint='admin_approve_sponsor')
+api.add_resource(AdminOperationsAPI, '/api/admin/operation/approve_sponsor/<int:sponsor_id>', methods=['POST'], endpoint='admin_approve_sponsor')
 api.add_resource(AdminAPI, '/api/admin/overview', methods=['GET'], endpoint='admin_overview')
 
 def init_app(app):

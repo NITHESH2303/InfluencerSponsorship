@@ -43,7 +43,3 @@ class SponsorAPI(Resource):
         except Exception as e:
             db.session.rollback()
             return internal_server_error(e)
-
-
-
-

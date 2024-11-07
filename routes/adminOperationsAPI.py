@@ -8,7 +8,7 @@ from application.models import Sponsor
 from application.response import success, create_response
 
 
-class AdminOperations(Resource):
+class AdminOperationsAPI(Resource):
 
     @roles_required('admin')
     def get(self):

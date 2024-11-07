@@ -1,3 +1,4 @@
+import click
 import redis
 from flask import Flask
 from flask_caching import Cache
@@ -44,11 +45,24 @@ def create_app():
     app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
     app.config['CACHE_DEFAULT_TIMEOUT'] = 1800
 
-    CORS(app)
+    app.config['CELERY_BROKER_URL'] = 'redis://127.0.0.1:6379/1'
+    app.config['CELERY_RESULT_BACKEND'] = 'redis://127.0.0.1:6379/1'
+
+    cors = CORS(app, resources={
+        r"/api/*": {
+            "origins": "http://localhost:5173",
+            "methods": ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
 
     cache = Cache(app=app)
 
-    app.redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
+    try:
+        app.redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
+        app.redis_client.ping()
+    except redis.ConnectionError:
+        print("Could not connect to Redis. Please ensure that Redis is running.")
 
     jwt = JWTManager(app)
     app.jwt = jwt
@@ -62,11 +76,23 @@ def create_app():
         db.init_app(app)
         cache.init_app(app)
         init_routes(app)
-        db.create_all()
-        print(f"Registered Models: {db.metadata.tables.keys()}")
-        PreProcess()
+        try:
+            db.create_all()
+            print(f"Registered Models: {db.metadata.tables.keys()}")
+            PreProcess()
+        except Exception as e:
+            print(f"Error during database initialization: {e}")
 
     print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
+    @app.cli.command('reset-db')
+    @click.confirmation_option(prompt='Are you sure you want to reset the database?')
+    def reset_db():
+        """Reset the database by dropping all tables and recreating them."""
+        db.drop_all()
+        db.create_all()
+        PreProcess()
+        click.echo('Database has been reset.')
 
     @app.jwt.token_in_blocklist_loader
     def check_if_token_in_blacklist(jwt_header, jwt_payload):

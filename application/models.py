@@ -24,8 +24,8 @@ class AdStatus(Enum):
 class UserRoles(Model):
     __tablename__ = 'user_roles'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    userid = db.Column(db.Integer, db.ForeignKey('user.id'))
+    roleid = db.Column(db.Integer, db.ForeignKey('role.id'))
 
 
 class Role(Model, RoleMixin):
@@ -90,7 +90,7 @@ class User(Model, UserMixin):
             "last_name": self.last_name,
             "email": self.email,
             "image": self.image,
-            "role": self.roles
+            "role": [role.name for role in self.roles],
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
@@ -98,8 +98,8 @@ class User(Model, UserMixin):
 class Sponsor(Model):
     __tablename__ = 'sponsor'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE', name='fk_sponsor_user_id'), nullable=False)
-    username = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_sponsor_user_name'), nullable=False)
+    userid = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE', name='fk_sponsor_userid'), nullable=False)
+    username = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_sponsor_username'), nullable=False)
     company_name = db.Column(db.String, nullable=False)
     industry_type = db.Column(db.String, nullable=False)
     description = db.Column(db.String)
@@ -109,7 +109,7 @@ class Sponsor(Model):
     def to_dict(self, exclude=None):
         exclude = exclude or []
         data = {
-            "user_id": self.id,
+            "userid": self.id,
             "username": self.username,
             "company_name": self.company_name,
             "industry_type": self.industry_type,
@@ -123,13 +123,25 @@ class Sponsor(Model):
 class Influencer(Model):
     __tablename__ = 'influencer'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE', name='fk_influencer_user_id'), nullable=False)
-    user_name = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_influencer_user_name'), nullable=False)
+    userid = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE', name='fk_influencer_userid'), nullable=False)
+    username = db.Column(db.String, db.ForeignKey('user.username', ondelete='CASCADE', name='fk_influencer_username'), nullable=False)
+    social_media_profiles = db.relationship('SocialMediaProfile', backref='influencer', lazy=True, cascade="all, delete-orphan")
     about = db.Column(db.String, default="")
     followers = db.Column(db.Integer, nullable=False)
     category = db.Column(db.String, nullable=False)
     ads = db.relationship('Ads', backref='influencer', lazy=True)
 
+class SocialMediaProfile(Model):
+    __tablename__ = 'social_media_profile'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String, unique=True, nullable=False)
+    influencer_id = db.Column(db.Integer, db.ForeignKey('influencer.id', ondelete='CASCADE'), nullable=False)
+    platform = db.Column(db.String, nullable=False)
+    followers = db.Column(db.Integer, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('platform', 'username', name='uq_platform_username'),
+    )
 
 class Campaign(Model):
     __tablename__ = 'campaign'
