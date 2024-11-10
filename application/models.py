@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
+from bs4.diagnose import profile
 from flask import current_app
 from flask_security import verify_password, hash_password, UserMixin, RoleMixin
 
@@ -130,6 +131,17 @@ class Influencer(Model):
     followers = db.Column(db.Integer, nullable=False)
     category = db.Column(db.String, nullable=False)
     ads = db.relationship('Ads', backref='influencer', lazy=True)
+
+    def to_dict(self, exclude=None):
+        exclude = exclude or []
+        data = {
+            "userid": self.userid,
+            "username": self.username,
+            "social_media_profiles": [profile.platform for profile in self.social_media_profiles],
+            "about": self.about,
+            "followers": self.followers,
+        }
+        return {key: val for key, val in data.items() if key not in exclude}
 
 class SocialMediaProfile(Model):
     __tablename__ = 'social_media_profile'

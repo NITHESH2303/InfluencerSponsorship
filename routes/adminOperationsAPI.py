@@ -32,12 +32,12 @@ class AdminOperationsAPI(Resource):
                 return create_response("Sponsor already approved", 400)
             if sponsor.status in Sponsor.status_transition:
                 sponsor.status = Sponsor.status_transition[sponsor.status]
+                db.session.commit()
+                return create_response("Sponsor status updated successfully", 200, sponsor.to_dict())
             else:
                 return create_response("Sponsor status cannot be changed", 400)
-            db.session.commit()
-            return create_response("Sponsor status updated successfully", 200, sponsor.to_dict())
         except NoResultFound:
             return create_response("Sponsor not found", 404)
         except Exception as e:
-            db.session.rollback()  # Rollback on error
+            db.session.rollback()
             return create_response(f"An error occurred: {str(e)}", 500)

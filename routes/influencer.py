@@ -1,9 +1,10 @@
 from flask_jwt_extended import jwt_required, get_jwt
 from flask_restful import Resource, reqparse, abort
+from flask_security.cli import roles
 
 from application import db
-from application.models import SocialMediaProfile, Influencer
-from application.response import success
+from application.models import SocialMediaProfile, Influencer, User, Role
+from application.response import success, duplicate_entry
 from application.tasks import update_follower_counts
 
 class InfluencerAPI(Resource):
@@ -34,9 +35,15 @@ class InfluencerAPI(Resource):
             .filter(SocialMediaProfile.username.in_(usernames))
             .all()
         )
-
         if existing_usernames:
             abort(400, message=f"Usernames {', '.join(existing_usernames)} are already in use.")
+
+        influencer_role = Role.query.filter_by(name="influencer").one_or_none()
+        user = User.query.filter_by(username=username, id=userid).one()
+        if influencer_role not in user.roles:
+            user.roles.append(influencer_role)
+        else:
+            abort(400, message=f"roles {', '.join(influencer_role)} already assigned to {username}.")
 
         influencer = Influencer(
             userid=userid,
@@ -63,7 +70,7 @@ class InfluencerAPI(Resource):
 
             update_follower_counts.delay(influencer.id)
 
-            return success("Influencer created successfully")
+            return success(influencer.to_dict())
 
         except Exception as e:
             db.session.rollback()

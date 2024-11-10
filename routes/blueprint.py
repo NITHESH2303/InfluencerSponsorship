@@ -1,14 +1,12 @@
-from crypt import methods
-
 from flask import Blueprint
 from flask_restful import Api
 
+from routes.admin import AdminAPI
 from routes.adminOperationsAPI import AdminOperationsAPI
 from routes.auth import AuthAPI
 from routes.influencer import InfluencerAPI
 from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
-from routes.admin import AdminAPI
 
 route_bp = Blueprint('routes', __name__)
 api = Api(route_bp)
@@ -25,6 +23,7 @@ api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user
 
 # SponsorAPI routes
 api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['POST'], endpoint='sponsor_register')
+# api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['PUT'], endpoint='sponsor_update')
 
 # InfluencerAPI routes
 api.add_resource(InfluencerAPI, '/api/register/influencer', methods=['POST'], endpoint='influencer_register')
