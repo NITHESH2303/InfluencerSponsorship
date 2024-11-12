@@ -1,11 +1,11 @@
 from flask_jwt_extended import jwt_required, get_jwt
 from flask_restful import Resource, reqparse, abort
-from flask_security.cli import roles
 
 from application import db
 from application.models import SocialMediaProfile, Influencer, User, Role
-from application.response import success, duplicate_entry
+from application.response import success
 from application.tasks import update_follower_counts
+
 
 class InfluencerAPI(Resource):
     def __init__(self):
@@ -75,16 +75,3 @@ class InfluencerAPI(Resource):
         except Exception as e:
             db.session.rollback()
             abort(500, message=f"An error {e} occurred while creating the influencer.")
-
-
-    # def get_twitter_follower_count(self, username):
-    #     url = f'https://api.twitter.com/2/users/by/username/{username}?user.fields=public_metrics"'
-    #     headers = {'Authorization': f'Bearer {Tokens.get_twitter_bearer_token()}'}
-    #     response = requests.get(url, headers=headers)
-    #
-    #     if response.status_code == 200:
-    #         data = response.json()
-    #         followers_count = data['data']['public_metrics']['followers_count']
-    #         return success({"followers": followers_count})
-    #     else:
-    #         return create_response({"error": "Failed to retrieve data from Twitter"}, response.status_code)

@@ -6,11 +6,12 @@ from sqlalchemy.exc import NoResultFound
 from application import db
 from application.models import Sponsor
 from application.response import success, create_response
+from routes.decorators import jwt_roles_required
 
 
 class AdminOperationsAPI(Resource):
 
-    @roles_required('admin')
+    @jwt_roles_required('admin')
     def get(self):
         return self.__get_pending_sponsor_approvals()
 
@@ -21,7 +22,7 @@ class AdminOperationsAPI(Resource):
     @staticmethod
     def __get_pending_sponsor_approvals():
         pending_sponsors = Sponsor.query.filter(or_(Sponsor.status == 0, Sponsor.status == 1)).all()
-        sponsors = [sponsor.name for sponsor in pending_sponsors]
+        sponsors = [sponsor.to_dict() for sponsor in pending_sponsors]
         return success(sponsors)
 
     @staticmethod

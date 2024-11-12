@@ -1,9 +1,9 @@
 import click
 import redis
-from flask import Flask
+from flask import Flask, g, logging
 from flask_caching import Cache
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, verify_jwt_in_request, get_jwt
 from flask_migrate import Migrate
 from flask_security import Security, SQLAlchemyUserDatastore
 
@@ -48,6 +48,8 @@ def create_app():
     app.config['CELERY_BROKER_URL'] = 'redis://127.0.0.1:6379/1'
     app.config['CELERY_RESULT_BACKEND'] = 'redis://127.0.0.1:6379/1'
 
+    # logging.basicConfig(level=logging.INFO)
+
     cors = CORS(app, resources={
         r"/api/*": {
             "origins": "http://localhost:5173",
@@ -84,6 +86,18 @@ def create_app():
             print(f"Error during database initialization: {e}")
 
     print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
+    @app.before_request
+    def load_roles_from_jwt():
+        try:
+            verify_jwt_in_request(optional=True)
+            claims = get_jwt()
+            # print(claims)
+            g.roles = claims.get("role", [])
+        except Exception as e:
+
+            g.roles = []
+
 
     @app.cli.command('reset-db')
     @click.confirmation_option(prompt='Are you sure you want to reset the database?')

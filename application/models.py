@@ -1,7 +1,6 @@
 from datetime import datetime
 from enum import Enum
 
-from bs4.diagnose import profile
 from flask import current_app
 from flask_security import verify_password, hash_password, UserMixin, RoleMixin
 
@@ -173,7 +172,7 @@ class Ads(Model):
     __tablename__ = 'ads'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
-    influencer_id = db.Column(db.Integer, db.ForeignKey('influencer.id'), nullable=False)
+    influencer_id = db.Column(db.Integer, db.ForeignKey('influencer.id'))
     status = db.Column(db.String, nullable=False, default='Pending')
     request = db.Column(db.String, nullable=False)
     amount = db.Column(db.Integer, nullable=False)
