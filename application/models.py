@@ -109,12 +109,12 @@ class Sponsor(Model):
     def to_dict(self, exclude=None):
         exclude = exclude or []
         data = {
-            "userid": self.id,
+            "sponsorid" : self.id,
             "username": self.username,
             "company_name": self.company_name,
             "industry_type": self.industry_type,
             "description": self.description,
-            "status": self.status,
+            "verification_status": self.status,
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
@@ -165,7 +165,23 @@ class Campaign(Model):
     budget = db.Column(db.Integer, nullable=False)
     status = db.Column(db.Enum(AdStatus), default=AdStatus.PENDING)
     visibility = db.Column(db.String, nullable=False, default='private')
+    niche = db.Column(db.String, nullable=False)
     ads = db.relationship('Ads', backref='campaign', lazy=True)
+
+    def to_dict(self, exclude=None):
+        exclude = exclude or []
+        data = {
+            "campaign_id": self.id,
+            "sponsor_id": self.sponsor_id,
+            "campaign_name": self.name,
+            "description": self.description,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "budget": self.budget,
+            "status": self.status,
+            "visibility": self.visibility,
+            "niche": self.niche,
+        }
 
 
 class Ads(Model):

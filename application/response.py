@@ -28,6 +28,9 @@ def user_not_found(resource_name, inp_type):
 def file_not_found():
     return create_response("Requested file not found", 404)
 
+def resource_not_found():
+    return create_response("User not found", 404)
+
 
 def validation_error(message):
     return create_response(f"Validation error: {message}", 400)

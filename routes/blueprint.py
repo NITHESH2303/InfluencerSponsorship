@@ -1,5 +1,3 @@
-from crypt import methods
-
 from flask import Blueprint
 from flask_restful import Api
 
@@ -25,6 +23,7 @@ api.add_resource(UserAPI, '/api/user/profile/<string:username>', methods=['GET',
 api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user_delete')         # Soft delete account
 
 # SponsorAPI routes
+api.add_resource(SponsorAPI, '/api/sponsor/meta', methods=['GET'], endpoint='sponsor_meta')
 api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['POST'], endpoint='sponsor_register')
 # InfluencerAPI routes
 api.add_resource(InfluencerAPI, '/api/register/influencer', methods=['POST'], endpoint='influencer_register')
@@ -35,7 +34,10 @@ api.add_resource(AdminOperationsAPI, '/api/admin/operation/sponsor_approval', me
 api.add_resource(AdminAPI, '/api/admin/overview', methods=['GET'], endpoint='admin_overview')
 
 #CampaignsAPI routes
-api.add_resource(CampaignsAPI, '/api/create/campaigns', methods=['POST'], endpoint='admin_campaigns')
+api.add_resource(CampaignsAPI, '/api/campaigns', methods=['GET'], endpoint='list_campaigns')
+api.add_resource(CampaignsAPI, '/api/campaigns/create_new_campaign', methods=['POST'], endpoint='create_campaigns')
+api.add_resource(CampaignsAPI, '/api/campaigns/edit/<int:campaign_id>', methods=['PUT'], endpoint='edit_campaigns')
+api.add_resource(CampaignsAPI, '/api/campaigns/delete', methods=['DELETE'], endpoint='delete_campaigns')
 
 def init_app(app):
     app.register_blueprint(route_bp)

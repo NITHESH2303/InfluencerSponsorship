@@ -1,6 +1,6 @@
 import click
 import redis
-from flask import Flask, g, logging
+from flask import Flask, g, request, make_response
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, verify_jwt_in_request, get_jwt
@@ -38,6 +38,8 @@ def create_app():
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
     # TODO : configure for CSFR
     app.config['JWT_COOKIE_CSRF_PROTECT'] = False
+    app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
+    app.config['JWT_REFRESH_COOKIE_PATH'] = '/refresh'
 
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_PORT'] = 6379
@@ -54,7 +56,8 @@ def create_app():
         r"/api/*": {
             "origins": "http://localhost:5173",
             "methods": ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"]
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
         }
     })
 
@@ -86,6 +89,16 @@ def create_app():
             print(f"Error during database initialization: {e}")
 
     print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
+    @app.before_request
+    def handle_options():
+        if request.method == "OPTIONS":
+            response = make_response()
+            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+            response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            response.headers.add("Access-Control-Allow-Credentials", "true")
+            return response
 
     @app.before_request
     def load_roles_from_jwt():

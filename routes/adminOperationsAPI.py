@@ -7,6 +7,7 @@ from application import db
 from application.models import Sponsor
 from application.response import success, create_response
 from routes.decorators import jwt_roles_required
+from routes.sponsor import SponsorAPI
 
 
 class AdminOperationsAPI(Resource):
@@ -15,7 +16,7 @@ class AdminOperationsAPI(Resource):
     def get(self):
         return self.__get_pending_sponsor_approvals()
 
-    @roles_required('admin')
+    @jwt_roles_required('admin')
     def post(self, sponsor_id):
         return self.__change_sponsor_registration_status(sponsor_id)
 
@@ -29,10 +30,10 @@ class AdminOperationsAPI(Resource):
     def __change_sponsor_registration_status(sponsor_id):
         try:
             sponsor = Sponsor.query.filter_by(id=sponsor_id).one()
-            if sponsor.status == Sponsor.sponsor_status['verified']:
+            if sponsor.status == SponsorAPI.sponsor_status['verified']:
                 return create_response("Sponsor already approved", 400)
-            if sponsor.status in Sponsor.status_transition:
-                sponsor.status = Sponsor.status_transition[sponsor.status]
+            if sponsor.status in SponsorAPI.status_transition:
+                sponsor.status = SponsorAPI.status_transition[sponsor.status]
                 db.session.commit()
                 return create_response("Sponsor status updated successfully", 200, sponsor.to_dict())
             else:

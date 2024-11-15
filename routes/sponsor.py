@@ -29,6 +29,10 @@ class SponsorAPI(Resource):
         self.sponsor_input_fields.add_argument("description", type=str, help="description")
 
     @jwt_required()
+    def get(self, sponsor_id=None):
+        self.__get_sponsor_details(sponsor_id)
+
+    @jwt_required()
     def post(self):
         self.__sponsor_registration()
 
@@ -71,3 +75,22 @@ class SponsorAPI(Resource):
             db.session.rollback()
             current_app.logger.error(f"Error occurred during sponsor registration: {e}")
             return internal_server_error("An error occurred while processing your request.")
+
+    def __get_sponsor_details(self, sponsor_id):
+        if sponsor_id is None:
+            return self.__get_sponsor_meta()
+        sponsor = Sponsor.query.filter_by(id=sponsor_id).one()
+        return success(sponsor.to_dict())
+
+    def __get_sponsor_meta(self):
+        current_user = get_jwt()
+        sponsor = Sponsor.query.filter_by(userid=current_user['user_id']).one()
+        sponsor_data = sponsor.to_dict()
+        print(f"Sponsor Data: {sponsor_data}")
+        return success(sponsor.to_dict())
+
+    @staticmethod
+    def get_sponsor_from_userid(userid):
+        sponsor = Sponsor.query.filter_by(userid=userid).one()
+        return sponsor
+
