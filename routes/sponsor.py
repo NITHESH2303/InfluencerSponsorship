@@ -30,11 +30,11 @@ class SponsorAPI(Resource):
 
     @jwt_required()
     def get(self, sponsor_id=None):
-        self.__get_sponsor_details(sponsor_id)
+        return self.__get_sponsor_details(sponsor_id)
 
     @jwt_required()
     def post(self):
-        self.__sponsor_registration()
+        return self.__sponsor_registration()
 
     @jwt_required()
     def __sponsor_registration(self):
@@ -86,8 +86,7 @@ class SponsorAPI(Resource):
         current_user = get_jwt()
         sponsor = Sponsor.query.filter_by(userid=current_user['user_id']).one()
         sponsor_data = sponsor.to_dict()
-        print(f"Sponsor Data: {sponsor_data}")
-        return success(sponsor.to_dict())
+        return success(sponsor_data)
 
     @staticmethod
     def get_sponsor_from_userid(userid):

@@ -3,7 +3,6 @@ from datetime import datetime
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt
 from flask_restful import Resource, reqparse
-from flask_restful.inputs import boolean
 
 from application import db
 from application.models import Sponsor, Campaign, AdStatus
@@ -29,7 +28,7 @@ class CampaignsAPI(Resource):
         if sponsor_id is None:
             current_user = get_jwt()
             sponsor_id = current_user["user_id"]
-        sponsor = Sponsor.query.filter_by(userid=sponsor_id).first()
+        sponsor = Sponsor.query.filter_by(id=sponsor_id).first()
 
         if not sponsor:
             return create_response("Sponsor not found", 404)
@@ -107,9 +106,9 @@ class CampaignsAPI(Resource):
             return jsonify({"status": "error", "message": "Campaign not found"}), 404
 
         try:
-            db.session.delete(campaign)
+            campaign.deleted_on = datetime.utcnow()
             db.session.commit()
-            return jsonify({"status": "success", "message": "Campaign deleted"}), 200
+            return create_response("Campaign deleted sucessufully", 200)
         except Exception as e:
             db.session.rollback()
             return jsonify({"status": "error", "message": str(e)}), 400
@@ -144,8 +143,8 @@ class CampaignsAPI(Resource):
         return jsonify({"data": analytics})
 
     @jwt_required()
-    def get(self):
-        sponsor_id = request.args.get("sponsor_id")
+    def get(self, sponsor_id=None):
+        # sponsor_id = request.args.get("sponsor_id")
 
         if sponsor_id:
             return self.__get_campaigns_by_sponsor(sponsor_id)
@@ -154,14 +153,14 @@ class CampaignsAPI(Resource):
     @jwt_required()
     @jwt_roles_required('sponsor')
     def post(self):
-        self.__create_campaign()
+        return self.__create_campaign()
 
     @jwt_required()
     @jwt_roles_required('sponsor')
     def put(self, campaign_id):
-        self.__update_campaign(campaign_id)
+        return self.__update_campaign(campaign_id)
 
     @jwt_required()
     @jwt_roles_required('sponsor')
     def delete(self, campaign_id):
-        self.__delete_campaign(campaign_id)
+        return self.__delete_campaign(campaign_id)

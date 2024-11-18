@@ -35,9 +35,10 @@ api.add_resource(AdminAPI, '/api/admin/overview', methods=['GET'], endpoint='adm
 
 #CampaignsAPI routes
 api.add_resource(CampaignsAPI, '/api/campaigns', methods=['GET'], endpoint='list_campaigns')
+api.add_resource(CampaignsAPI, '/api/campaigns/<int:sponsor_id>', methods=['GET'], endpoint='sponsor_campaign')
 api.add_resource(CampaignsAPI, '/api/campaigns/create_new_campaign', methods=['POST'], endpoint='create_campaigns')
 api.add_resource(CampaignsAPI, '/api/campaigns/edit/<int:campaign_id>', methods=['PUT'], endpoint='edit_campaigns')
-api.add_resource(CampaignsAPI, '/api/campaigns/delete', methods=['DELETE'], endpoint='delete_campaigns')
+api.add_resource(CampaignsAPI, '/api/campaigns/<int:campaign_id>/delete', methods=['DELETE'], endpoint='delete_campaigns')
 
 def init_app(app):
     app.register_blueprint(route_bp)
