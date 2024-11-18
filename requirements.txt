@@ -11,3 +11,4 @@ SQLAlchemy==2.0.31
 
 celery~=5.4.0
 Flask-Cors~=5.0.0
+Flask-Mail

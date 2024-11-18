@@ -44,7 +44,7 @@ class User(Model, UserMixin):
     email = db.Column(db.String, unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String, nullable=False)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
-    image = db.Column(db.String, nullable=True)
+    t = db.Column(db.String, nullable=True)
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'))
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False)

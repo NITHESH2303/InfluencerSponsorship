@@ -50,6 +50,13 @@ def create_app():
     app.config['CELERY_BROKER_URL'] = 'redis://127.0.0.1:6379/1'
     app.config['CELERY_RESULT_BACKEND'] = 'redis://127.0.0.1:6379/1'
 
+    app.config['MAIL_SERVER'] = 'gmail'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USE_SSL'] = False
+    app.config['MAIL_USERNAME'] = 'nithesh.kanna@zohocorp.com'
+    app.config['MAIL_PASSWORD'] = 'pass'
+
     # logging.basicConfig(level=logging.INFO)
 
     cors = CORS(app, resources={
