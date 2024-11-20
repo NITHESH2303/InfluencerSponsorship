@@ -138,8 +138,16 @@ class Influencer(Model):
         data = {
             "userid": self.userid,
             "username": self.username,
-            "social_media_profiles": [profile.platform for profile in self.social_media_profiles],
+            "social_media_profiles": [
+                {
+                    "platform": profile.platform,
+                    "username": profile.username,
+                    "followers": profile.followers,
+                }
+                for profile in self.social_media_profiles
+            ],
             "about": self.about,
+            "category": self.category,
             "followers": self.followers,
         }
         return {key: val for key, val in data.items() if key not in exclude}
@@ -219,8 +227,9 @@ class Ads(Model):
             "ad_id": self.id,
             "campaign_id": self.campaign_id,
             "influencer_id": self.influencer_id,
-            "status": self.status,
+            "status": self.status.value,
             "amount": self.amount,
+            "negotiation_amount": self.negotiation_amount,
             "requirement": self.requirement,
             "messages": self.messages,
         }

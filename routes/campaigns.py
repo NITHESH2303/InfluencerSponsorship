@@ -6,7 +6,7 @@ from flask_restful import Resource, reqparse
 
 from application import db
 from application.models import Sponsor, Campaign, AdStatus
-from application.response import create_response, success, internal_server_error
+from application.response import create_response, success, internal_server_error, resource_not_found
 from routes.decorators import jwt_roles_required
 from routes.sponsor import SponsorAPI
 
@@ -27,13 +27,28 @@ class CampaignsAPI(Resource):
     def __get_campaigns_by_sponsor(sponsor_id=None):
         if sponsor_id is None:
             current_user = get_jwt()
-            sponsor_id = current_user["user_id"]
-        sponsor = Sponsor.query.filter_by(id=sponsor_id).first()
+            user_id = current_user["user_id"]
+            sponsor = Sponsor.query.filter_by(userid=user_id).one()
+        else:
+            sponsor = Sponsor.query.filter_by(id=sponsor_id).one()
 
         if not sponsor:
             return create_response("Sponsor not found", 404)
 
-        campaigns = Campaign.query.filter_by(sponsor_id=sponsor.id).all()
+        niche = request.args.get("niche")
+        min_budget = request.args.get("min_budget", type=int)
+        max_budget = request.args.get("max_budget", type=int)
+
+        query = Campaign.query.filter_by(visibility="public", sponsor_id=sponsor.id).all()
+
+        if niche:
+            query = query.filter(Campaign.niche.ilike(f"%{niche}%"))
+        if min_budget:
+            query = query.filter(Campaign.budget >= min_budget)
+        if max_budget:
+            query = query.filter(Campaign.budget <= max_budget)
+
+        campaigns = query.all()
         campaign_list = [campaign.to_dict() for campaign in campaigns]
         return success(campaign_list)
 
@@ -42,6 +57,13 @@ class CampaignsAPI(Resource):
         campaigns = Campaign.query.all()
         all_campaigns = [campaign.to_dict() for campaign in campaigns]
         return success(all_campaigns)
+
+    @staticmethod
+    def __get_campaign_by_id(campaign_id):
+        campaign = Campaign.query.filter_by(id=campaign_id).one()
+        if not campaign:
+            return resource_not_found("Campaign not found")
+        return success(campaign.to_dict())
 
     def __create_campaign(self):
         args = self.campaign_input_fields.parse_args()
@@ -143,12 +165,13 @@ class CampaignsAPI(Resource):
         return jsonify({"data": analytics})
 
     @jwt_required()
-    def get(self, sponsor_id=None):
-        # sponsor_id = request.args.get("sponsor_id")
-
-        if sponsor_id:
+    def get(self, sponsor_id=None, campaign_id=None):
+        if campaign_id is not None:
+            return self.__get_campaign_by_id(campaign_id)
+        elif sponsor_id is not None:
             return self.__get_campaigns_by_sponsor(sponsor_id)
-        return self.__get_all_campaigns()
+        else:
+            return self.__get_all_campaigns()
 
     @jwt_required()
     @jwt_roles_required('sponsor')

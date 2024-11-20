@@ -17,13 +17,13 @@ class AdRequestAPI(Resource):
         self.adrequest_input_fields.add_argument("amount", type=int, required=True, help="Amount is required.")
 
     def __validate_budget(self, campaign_id, ad_amount):
-        campaign = Campaign.query.get(campaign_id)
-        if not campaign:
-            abort(404, message="Campaign not found.")
-
-        total_cost = sum(ad.amount for ad in campaign.ads if ad.deleted_on is None)
-        if total_cost + ad_amount > campaign.budget:
-            abort(400, message=f"Ad cost exceeds the remaining campaign budget. Remaining budget: {campaign.budget - total_cost}.")
+        try:
+            ad = Ads(campaign_id=campaign_id, amount=ad_amount)
+            db.session.add(ad)
+            db.session.flush()
+            db.session.rollback()
+        except ValueError as e:
+            abort(400, message=str(e))
 
     @jwt_required()
     def get(self):
@@ -91,8 +91,8 @@ class AdRequestAPI(Resource):
 
         args = self.adrequest_input_fields.parse_args()
         try:
-            ad.amount = args.get("amount", ad.amount)
-            ad.requirement = args.get("requirement", ad.requirement)
+            ad.amount = args.get("amount")
+            ad.requirement = args.get("requirement")
             ad.status = "Pending"  # Reset status for negotiation
             db.session.commit()
             return success(ad.to_dict())
