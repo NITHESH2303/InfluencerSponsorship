@@ -22,6 +22,18 @@ class AdStatus(Enum):
     ACCEPTED = 'Accepted'
     REJECTED = 'Rejected'
 
+class CampaignStatus(Enum):
+    YetToStart = 'YetToStart'
+    Active = 'Active'
+    Completed = 'Completed'
+
+class CampaignNiche(Enum):
+    Technology = 'Technology'
+    Fashion = 'Fashion'
+    Fitness = 'Fitness'
+    Food = 'Food'
+    Travel = 'Travel'
+    Education = 'Education'
 
 class UserRoles(Model):
     __tablename__ = 'user_roles'
@@ -152,6 +164,7 @@ class Influencer(Model):
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
+
 class SocialMediaProfile(Model):
     __tablename__ = 'social_media_profile'
     id = db.Column(db.Integer, primary_key=True)
@@ -164,6 +177,12 @@ class SocialMediaProfile(Model):
         db.UniqueConstraint('platform', 'username', name='uq_platform_username'),
     )
 
+
+def get_niches():
+    niches = [niche.value for niche in CampaignNiche]
+    return niches
+
+
 class Campaign(Model):
     __tablename__ = 'campaign'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -173,9 +192,9 @@ class Campaign(Model):
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
     budget = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.Enum(AdStatus), default=AdStatus.PENDING)
-    visibility = db.Column(db.String, nullable=False, default='private')
-    niche = db.Column(db.String, nullable=False)
+    status = db.Column(db.Enum(CampaignStatus), default=CampaignStatus.YetToStart)
+    visibility = db.Column(db.Boolean, nullable=False, default=False)
+    niche = db.Column(db.Enum(CampaignNiche), nullable=False)
     ads = db.relationship('Ads', backref='campaign', lazy=True)
     deleted_on = db.Column(db.DateTime, nullable=True)
 
@@ -191,7 +210,7 @@ class Campaign(Model):
             "budget": self.budget,
             "status": self.status.value,
             "visibility": self.visibility,
-            "niche": self.niche,
+            "niche": self.niche.value,
         }
         return {key: val for key, val in data.items() if key not in exclude}
 

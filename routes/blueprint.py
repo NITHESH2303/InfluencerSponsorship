@@ -9,6 +9,8 @@ from routes.adminOperationsAPI import AdminOperationsAPI
 from routes.auth import AuthAPI
 from routes.campaigns import CampaignsAPI
 from routes.influencer import InfluencerAPI
+from routes.niches import Niches
+# from routes.niches import Niches
 from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
 
@@ -31,8 +33,8 @@ api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['POST'], endpoint
 
 # InfluencerAPI routes
 api.add_resource(InfluencerAPI, '/api/register/influencer', methods=['POST'], endpoint='influencer_register')
-api.add_resource(InfluencerAPI, '/api/influencer/profile', methods=['GET'], endpoint='influencer_profile')
-api.add_resource(InfluencerAPI, '/api/influencer/profile/edit/<int:influencer_id>', methods=['PUT'], endpoint='influencer_profile')
+api.add_resource(InfluencerAPI, '/api/influencer/meta', methods=['GET'], endpoint='influencer_profile')
+api.add_resource(InfluencerAPI, '/api/influencer/profile/edit', methods=['PATCH'], endpoint='influencer_edit_profile')
 api.add_resource(InfluencerAPI, '/api/influencer/campaigns', methods=['GET'], endpoint='influencer_campaign')
 api.add_resource(InfluencerAPI, '/api/influencer/adrequests', methods=['GET'], endpoint='influencer_adrequest')
 api.add_resource(InfluencerAPI, '/api/influencer/adrequests/negotiate', methods=['PATCH'], endpoint='influencer_negotiate_adrequest')
@@ -47,15 +49,19 @@ api.add_resource(CampaignsAPI, '/api/campaigns', methods=['GET'], endpoint='list
 api.add_resource(CampaignsAPI, '/api/sponsor/campaigns/<int:sponsor_id>', methods=['GET'], endpoint='sponsor_campaign')
 api.add_resource(CampaignsAPI, '/api/campaigns/<int:campaign_id>', methods=['GET'], endpoint='get_campaign_by_id')
 api.add_resource(CampaignsAPI, '/api/campaigns/create_new_campaign', methods=['POST'], endpoint='create_campaigns')
-api.add_resource(CampaignsAPI, '/api/campaigns/edit/<int:campaign_id>', methods=['PUT'], endpoint='edit_campaigns')
+api.add_resource(CampaignsAPI, '/api/campaigns/edit/<int:campaign_id>', methods=['PATCH'], endpoint='edit_campaigns')
 api.add_resource(CampaignsAPI, '/api/campaigns/<int:campaign_id>/delete', methods=['DELETE'], endpoint='delete_campaigns')
+api.add_resource(CampaignsAPI, '/api/sponsor/campaigns/<int:campaign_id>/status', methods=['PUT'], endpoint='update_campaign_status')
 
 #AdRequest routes
 api.add_resource(AdRequestAPI, '/api/adrequests?campaignid={campaign_id}', methods=['GET'], endpoint='adrequests_by_campaign')
 api.add_resource(AdRequestAPI, '/api/adrequests/<int:adrequest_id>', methods=['GET'], endpoint='get_adrequest_id')
-api.add_resource(AdRequestAPI, 'api/adrequests', methods=['POST'], endpoint='create_adrequests')
+api.add_resource(AdRequestAPI, '/api/adrequests', methods=['POST'], endpoint='create_adrequests')
 api.add_resource(AdRequestAPI, '/api/adrequests/edit/<int:adrequest_id>', methods=['PUT'], endpoint='edit_adrequests')
 api.add_resource(AdRequestAPI, '/api/adrequests/{ad_id}/delete', methods=['DELETE'], endpoint='delete_adrequests')
+
+# Enum routes
+api.add_resource(Niches, '/api/niches', methods=['GET'], endpoint='list_niches')
 
 def init_app(app):
     app.register_blueprint(route_bp)

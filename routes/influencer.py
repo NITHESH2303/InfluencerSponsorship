@@ -1,12 +1,12 @@
 from flask_jwt_extended import jwt_required, get_jwt
 from flask_restful import Resource, reqparse, abort
-from flask_security import roles_required
 from sqlalchemy.exc import IntegrityError
 
 from application import db
 from application.models import SocialMediaProfile, Influencer, User, Role
 from application.response import success, internal_server_error, resource_not_found
 from application.tasks import update_follower_counts
+from routes.decorators import jwt_roles_required
 
 
 class InfluencerAPI(Resource):
@@ -27,14 +27,13 @@ class InfluencerAPI(Resource):
         return self.__get_influencer_details(influencer_id)
 
     @jwt_required()
-    @roles_required('influencer')
     def post(self):
-        self.__influencer_registration()
+        return self.__influencer_registration()
 
     @jwt_required()
-    @roles_required('influencer')
+    @jwt_roles_required('influencer')
     def patch(self):
-        self.__update_influencer_profile()
+        return self.__update_influencer_profile()
 
     def __influencer_registration(self):
         args = self.influencer_input_fields.parse_args()

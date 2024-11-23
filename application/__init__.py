@@ -55,7 +55,7 @@ def create_app():
     cors = CORS(app, resources={
         r"/api/*": {
             "origins": "http://localhost:5173",
-            "methods": ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
         }
@@ -95,7 +95,7 @@ def create_app():
         if request.method == "OPTIONS":
             response = make_response()
             response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
-            response.headers.add("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+            response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
             response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response
