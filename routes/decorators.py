@@ -2,7 +2,6 @@ from functools import wraps
 
 from flask import abort
 from flask import g
-from flask_jwt_extended import jwt_required
 
 
 def jwt_roles_required(required_role):

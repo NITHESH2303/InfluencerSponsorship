@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import Enum
+from sqlite3 import IntegrityError
 
 from flask import current_app
 from flask_security import verify_password, hash_password, UserMixin, RoleMixin
+from sqlalchemy.orm import validates
 
 from application.database import db
 from validations.RoleValidations import RoleValidations
@@ -20,6 +22,18 @@ class AdStatus(Enum):
     ACCEPTED = 'Accepted'
     REJECTED = 'Rejected'
 
+class CampaignStatus(Enum):
+    YetToStart = 'YetToStart'
+    Active = 'Active'
+    Completed = 'Completed'
+
+class CampaignNiche(Enum):
+    Technology = 'Technology'
+    Fashion = 'Fashion'
+    Fitness = 'Fitness'
+    Food = 'Food'
+    Travel = 'Travel'
+    Education = 'Education'
 
 class UserRoles(Model):
     __tablename__ = 'user_roles'
@@ -136,11 +150,20 @@ class Influencer(Model):
         data = {
             "userid": self.userid,
             "username": self.username,
-            "social_media_profiles": [profile.platform for profile in self.social_media_profiles],
+            "social_media_profiles": [
+                {
+                    "platform": profile.platform,
+                    "username": profile.username,
+                    "followers": profile.followers,
+                }
+                for profile in self.social_media_profiles
+            ],
             "about": self.about,
+            "category": self.category,
             "followers": self.followers,
         }
         return {key: val for key, val in data.items() if key not in exclude}
+
 
 class SocialMediaProfile(Model):
     __tablename__ = 'social_media_profile'
@@ -154,6 +177,12 @@ class SocialMediaProfile(Model):
         db.UniqueConstraint('platform', 'username', name='uq_platform_username'),
     )
 
+
+def get_niches():
+    niches = [niche.value for niche in CampaignNiche]
+    return niches
+
+
 class Campaign(Model):
     __tablename__ = 'campaign'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -163,10 +192,11 @@ class Campaign(Model):
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
     budget = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.Enum(AdStatus), default=AdStatus.PENDING)
-    visibility = db.Column(db.String, nullable=False, default='private')
-    niche = db.Column(db.String, nullable=False)
+    status = db.Column(db.Enum(CampaignStatus), default=CampaignStatus.YetToStart)
+    visibility = db.Column(db.Boolean, nullable=False, default=False)
+    niche = db.Column(db.Enum(CampaignNiche), nullable=False)
     ads = db.relationship('Ads', backref='campaign', lazy=True)
+    deleted_on = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
@@ -178,10 +208,11 @@ class Campaign(Model):
             "start_date": self.start_date,
             "end_date": self.end_date,
             "budget": self.budget,
-            "status": self.status,
+            "status": self.status.value,
             "visibility": self.visibility,
-            "niche": self.niche,
+            "niche": self.niche.value,
         }
+        return {key: val for key, val in data.items() if key not in exclude}
 
 
 class Ads(Model):
@@ -189,8 +220,36 @@ class Ads(Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
     influencer_id = db.Column(db.Integer, db.ForeignKey('influencer.id'))
-    status = db.Column(db.String, nullable=False, default='Pending')
-    request = db.Column(db.String, nullable=False)
+    status = db.Column(db.Enum(AdStatus), default=AdStatus.PENDING)
     amount = db.Column(db.Integer, nullable=False)
+    negotiation_amount = db.Column(db.Integer, nullable=True)
     requirement = db.Column(db.String, nullable=False)
     messages = db.Column(db.String)
+    deleted_on = db.Column(db.DateTime, nullable=True)
+
+    @validates('amount')
+    def validate_amount(self, key, value):
+        campaign = Campaign.query.get(self.campaign_id)
+        if not campaign:
+            raise IntegrityError(None, None, f"Campaign with ID {self.campaign_id} does not exist.")
+
+        total_ad_cost = sum(ad.amount for ad in campaign.ads if not ad.deleted_on)
+
+        if total_ad_cost + value > campaign.budget:
+            raise ValueError(f"Ad amount exceeds the remaining budget of {campaign.budget - total_ad_cost}.")
+
+        return value
+
+    def to_dict(self, exclude=None):
+        exclude = exclude or []
+        data = {
+            "ad_id": self.id,
+            "campaign_id": self.campaign_id,
+            "influencer_id": self.influencer_id,
+            "status": self.status.value,
+            "amount": self.amount,
+            "negotiation_amount": self.negotiation_amount,
+            "requirement": self.requirement,
+            "messages": self.messages,
+        }
+        return {key : val for key, val in data.items() if key not in exclude}
