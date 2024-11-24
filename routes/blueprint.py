@@ -65,8 +65,8 @@ api.add_resource(AdRequestAPI, '/api/adrequests/{ad_id}/delete', methods=['DELET
 api.add_resource(Niches, '/api/niches', methods=['GET'], endpoint='list_niches')
 
 # search routes
-api.add_resource(SearchAPI, '/api/influencer/search/<string:pattern>', methods=['GET'], endpoint='search_influencer')
-api.add_resource(SearchAPI, '/api/campaign/search/<string:pattern>', methods=['GET'], endpoint='search_campaign')
+api.add_resource(SearchAPI, '/api/influencer/search', methods=['GET'], endpoint='search_influencer')
+api.add_resource(SearchAPI, '/api/campaign/search', methods=['GET'], endpoint='search_campaign')
 
 def init_app(app):
     app.register_blueprint(route_bp)

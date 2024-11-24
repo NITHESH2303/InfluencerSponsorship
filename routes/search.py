@@ -4,10 +4,24 @@ from application.models import Influencer, Campaign
 
 class SearchAPI(Resource):
 
-  def get(self, pattern=''):
+  def get(self):
+    print(request.args)
     if "influencer" in request.url:
-      influencers = Influencer.query.filter(Influencer.category.like('%'+pattern+'%')).filter(Influencer.followers.like(pattern)).all()
-      return influencers
+      if 'niche' in request.args:
+        influencers = Influencer.query.filter(Influencer.category.like('%'+request.args['niche']+'%')).all()
+        return influencers
+      if 'username' in request.args:
+        influencers = Influencer.query.filter(Influencer.username.like('%'+request.args['username']+'%')).all()
+        return influencers
+      if 'rating' in request.orgs:
+        influencers = Influencer.query.filter(Influencer.followers.equals(int(request.args['rating']))).all()
+        return influencers
+      return None
     else:
-      campaigns = Campaign.query.filter(Campaign.niche.like('%'+pattern+'%')).filter(Campaign.description.like('%'+pattern+'%')).all()
-      return campaigns
+      if 'niche' in request.args:
+        campaigns = Campaign.query.filter(Campaign.niche.like('%'+request.args['niche']+'%')).all()
+        return campaigns
+      if 'description' in request.args:
+        campaigns = Campaign.query.filter(Campaign.description.like('%'+request.args['description']+'%')).all()
+        return campaigns
+      return None
