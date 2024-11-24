@@ -11,6 +11,7 @@ from routes.campaigns import CampaignsAPI
 from routes.influencer import InfluencerAPI
 from routes.niches import Niches
 # from routes.niches import Niches
+from routes.search import SearchAPI
 from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
 
@@ -62,6 +63,10 @@ api.add_resource(AdRequestAPI, '/api/adrequests/{ad_id}/delete', methods=['DELET
 
 # Enum routes
 api.add_resource(Niches, '/api/niches', methods=['GET'], endpoint='list_niches')
+
+# search routes
+api.add_resource(SearchAPI, '/api/influencer/search/<string:pattern>', methods=['GET'], endpoint='search_influencer')
+api.add_resource(SearchAPI, '/api/campaign/search/<string:pattern>', methods=['GET'], endpoint='search_campaign')
 
 def init_app(app):
     app.register_blueprint(route_bp)
