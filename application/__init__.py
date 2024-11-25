@@ -1,3 +1,5 @@
+import os
+
 import click
 import redis
 from flask import Flask, g, request, make_response
@@ -14,7 +16,8 @@ from routes.blueprint import init_app as init_routes
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder= "/Users/nithesh-pt7363/Work/Platform/InfluencerSponsorship/templates")
+    print(app.template_folder)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./mad2.sqlite3'
     app.config['SECRET_KEY'] = 'MadTheMad2'
@@ -115,11 +118,10 @@ def create_app():
     @app.cli.command('reset-db')
     @click.confirmation_option(prompt='Are you sure you want to reset the database?')
     def reset_db():
-        """Reset the database by dropping all tables and recreating them."""
         db.drop_all()
         db.create_all()
         PreProcess()
-        click.echo('Database has been reset.')
+        click.echo('Database has been reset...')
 
     @app.jwt.token_in_blocklist_loader
     def check_if_token_in_blacklist(jwt_header, jwt_payload):

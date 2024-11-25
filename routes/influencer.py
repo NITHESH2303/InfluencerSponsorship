@@ -1,3 +1,4 @@
+from flask import request
 from flask_jwt_extended import jwt_required, get_jwt
 from flask_restful import Resource, reqparse, abort
 from sqlalchemy.exc import IntegrityError
@@ -5,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from application import db
 from application.models import SocialMediaProfile, Influencer, User, Role
 from application.response import success, internal_server_error, resource_not_found
-from application.tasks import update_follower_counts
+from services.tasks import update_follower_counts
 from routes.decorators import jwt_roles_required
 
 
@@ -102,15 +103,47 @@ class InfluencerAPI(Resource):
 
     def __get_influencer_details(self, influencer_id):
         if influencer_id is None:
-            return self.__get_influencer_meta()
-        sponsor = Influencer.query.filter_by(id=influencer_id).one()
-        return success(sponsor.to_dict())
+            endpoint = request.endpoint
+            if endpoint == 'routes.influencer_meta':
+                return self.__get_influencer_meta()
+            elif endpoint == 'routes.influencer_profile_list':
+                return self.__get_influencer_list()
+
+        influencer = Influencer.query.filter_by(id=influencer_id).first()
+        if not influencer:
+            return resource_not_found("Influencer not found")
+
+        user = User.query.get(influencer.userid)
+        ads = [{"id": ad.id,
+                "requirement": ad.requirement,
+                "amount": ad.amount,
+                "status": ad.status.value,
+                "campaign_name": ad.campaign.name
+                }
+               for ad in influencer.ads  if ad.deleted_on is None]
+        return success({
+            "username": influencer.username,
+            "about": influencer.about,
+            "category": influencer.category,
+            "followers": influencer.followers,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "ads": ads,
+            }
+        )
 
     def __get_influencer_meta(self):
         current_user = get_jwt()
         influencer = Influencer.query.filter_by(userid=current_user['user_id']).one()
         influencer_data = influencer.to_dict()
         return success(influencer_data)
+
+    def __get_influencer_list(self):
+        influencers = Influencer.query.all()
+        influencer_list = [influencer.to_dict() for influencer in influencers]
+        return success(influencer_list)
+
 
     def __update_influencer_profile(self):
         args = self.influencer_input_fields.parse_args()

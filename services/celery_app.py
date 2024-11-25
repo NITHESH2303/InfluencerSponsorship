@@ -33,3 +33,9 @@ class FlaskCelery(Celery):
         )
 
 celery = FlaskCelery()
+
+"""
+
+cmd: celery --app=app.celery worker --loglevel=info --pool gevent
+
+"""

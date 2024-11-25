@@ -1,5 +1,3 @@
-from crypt import methods
-
 from flask import Blueprint
 from flask_restful import Api
 
@@ -8,9 +6,9 @@ from routes.admin import AdminAPI
 from routes.adminOperationsAPI import AdminOperationsAPI
 from routes.auth import AuthAPI
 from routes.campaigns import CampaignsAPI
+from routes.emailAPI import EmailAPI
 from routes.influencer import InfluencerAPI
-from routes.niches import Niches
-# from routes.niches import Niches
+from routes.enum import EnumAPI
 from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
 
@@ -30,10 +28,13 @@ api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user
 # SponsorAPI routes
 api.add_resource(SponsorAPI, '/api/sponsor/meta', methods=['GET'], endpoint='sponsor_meta')
 api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['POST'], endpoint='sponsor_register')
+api.add_resource(SponsorAPI, '/api/profile/sponsor/<int:sponsor_id>', methods=['GET'], endpoint='sponsor_profile')
 
 # InfluencerAPI routes
 api.add_resource(InfluencerAPI, '/api/register/influencer', methods=['POST'], endpoint='influencer_register')
-api.add_resource(InfluencerAPI, '/api/influencer/meta', methods=['GET'], endpoint='influencer_profile')
+api.add_resource(InfluencerAPI, '/api/influencer/meta', methods=['GET'], endpoint='influencer_meta')
+api.add_resource(InfluencerAPI, '/api/profile/influencer/<int:influencer_id>', methods=['GET'], endpoint='influencer_profile')
+api.add_resource(InfluencerAPI, '/api/influencers/list', methods=['GET'], endpoint='influencer_profile_list')
 api.add_resource(InfluencerAPI, '/api/influencer/profile/edit', methods=['PATCH'], endpoint='influencer_edit_profile')
 api.add_resource(InfluencerAPI, '/api/influencer/campaigns', methods=['GET'], endpoint='influencer_campaign')
 api.add_resource(InfluencerAPI, '/api/influencer/adrequests', methods=['GET'], endpoint='influencer_adrequest')
@@ -54,14 +55,22 @@ api.add_resource(CampaignsAPI, '/api/campaigns/<int:campaign_id>/delete', method
 api.add_resource(CampaignsAPI, '/api/sponsor/campaigns/<int:campaign_id>/status', methods=['PUT'], endpoint='update_campaign_status')
 
 #AdRequest routes
-api.add_resource(AdRequestAPI, '/api/adrequests?campaignid={campaign_id}', methods=['GET'], endpoint='adrequests_by_campaign')
-api.add_resource(AdRequestAPI, '/api/adrequests/<int:adrequest_id>', methods=['GET'], endpoint='get_adrequest_id')
-api.add_resource(AdRequestAPI, '/api/adrequests', methods=['POST'], endpoint='create_adrequests')
-api.add_resource(AdRequestAPI, '/api/adrequests/edit/<int:adrequest_id>', methods=['PUT'], endpoint='edit_adrequests')
-api.add_resource(AdRequestAPI, '/api/adrequests/{ad_id}/delete', methods=['DELETE'], endpoint='delete_adrequests')
+api.add_resource(AdRequestAPI, '/api/adrequests/<int:campaign_id>', methods=['GET'], endpoint='adrequests_by_campaign')
+api.add_resource(AdRequestAPI, '/api/campaign/<int:campaign_id>/adrequests/<int:ad_id>', methods=['GET'], endpoint='get_adrequest_id')
+api.add_resource(AdRequestAPI, '/api/influencer/ad-requests/<int:influencer_id>', methods=['GET'], endpoint='get_adrequest_influencer')
+api.add_resource(AdRequestAPI, '/api/adrequests/<int:influencer_id>/new', methods=['POST'], endpoint='create_adrequests')
+api.add_resource(AdRequestAPI, '/api/adrequests/<int:ad_id>/edit', methods=['PUT'], endpoint='edit_adrequests')
+api.add_resource(AdRequestAPI, '/api/influencer/ad-requests/<int:ad_id>/status', methods=['PATCH'], endpoint='update_adrequest_status')
+api.add_resource(AdRequestAPI, '/api/influencer/negotiate/<int:ad_id>', methods=['PATCH'], endpoint='negotiate_adrequest')
+api.add_resource(AdRequestAPI, '/api/adrequests/<int:ad_id>/accept_negotiation', methods=['PATCH'], endpoint='accept_adrequest_negotiation')
+api.add_resource(AdRequestAPI, '/api/adrequests/<int:ad_id>/delete', methods=['DELETE'], endpoint='delete_adrequests')
 
 # Enum routes
-api.add_resource(Niches, '/api/niches', methods=['GET'], endpoint='list_niches')
+api.add_resource(EnumAPI, '/api/niches', methods=['GET'], endpoint='list_niches')
+api.add_resource(EnumAPI, '/api/adstatus', methods=['GET'], endpoint='list_adstatus')
+
+#emailAPI routes
+api.add_resource(EmailAPI, '/api/send_emails', methods=['POST'], endpoint='list_emails')
 
 def init_app(app):
     app.register_blueprint(route_bp)
