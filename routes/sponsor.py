@@ -1,6 +1,6 @@
 from sqlite3 import IntegrityError
 
-from flask import current_app
+from flask import current_app, request
 from flask_jwt_extended import get_jwt, jwt_required
 from flask_restful import Resource, reqparse, abort
 
@@ -78,6 +78,9 @@ class SponsorAPI(Resource):
 
     def __get_sponsor_details(self, sponsor_id):
         if sponsor_id is None:
+            endpoint = request.endpoint
+            if endpoint == 'routes.sponsor_list':
+                return self.__get_sponsor_list()
             return self.__get_sponsor_meta()
         sponsor = Sponsor.query.filter_by(id=sponsor_id).one()
         user = User.query.get(sponsor.userid)
@@ -101,8 +104,10 @@ class SponsorAPI(Resource):
         sponsor_data = sponsor.to_dict()
         return success(sponsor_data)
 
-    # def __get_sponsor_profile(self, username):
-
+    def __get_sponsor_list(self):
+        sponsors = Sponsor.query.all()
+        sponsors_list = [sponsor.to_dict() for sponsor in sponsors]
+        return success(sponsors_list)
 
     @staticmethod
     def get_sponsor_from_userid(userid):

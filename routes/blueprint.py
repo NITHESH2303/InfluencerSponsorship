@@ -1,6 +1,7 @@
 from flask import Blueprint
 from flask_restful import Api
 
+from routes.Reports import ReportsAPI
 from routes.adRequestAPI import AdRequestAPI
 from routes.admin import AdminAPI
 from routes.adminOperationsAPI import AdminOperationsAPI
@@ -28,6 +29,7 @@ api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user
 
 # SponsorAPI routes
 api.add_resource(SponsorAPI, '/api/sponsor/meta', methods=['GET'], endpoint='sponsor_meta')
+api.add_resource(SponsorAPI, '/api/sponsors/list', methods=['GET'], endpoint='sponsor_list')
 api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['POST'], endpoint='sponsor_register')
 api.add_resource(SponsorAPI, '/api/profile/sponsor/<int:sponsor_id>', methods=['GET'], endpoint='sponsor_profile')
 
@@ -75,6 +77,9 @@ api.add_resource(EmailAPI, '/api/send_emails', methods=['POST'], endpoint='list_
 
 # triggerJobs routes
 api.add_resource(TriggerAPI, '/api/trigger/daily_remainders', methods=['POST'], endpoint='trigger_daily_remainders')
+
+#export routes
+api.add_resource(ReportsAPI, '/api/export_campaigns/<int:sponsor_id>', methods=['POST'], endpoint='export_campaigns')
 
 def init_app(app):
     app.register_blueprint(route_bp)

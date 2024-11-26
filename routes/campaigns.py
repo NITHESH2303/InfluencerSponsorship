@@ -60,7 +60,7 @@ class CampaignsAPI(Resource):
     @staticmethod
     def __get_all_campaigns():
         campaigns = Campaign.query.all()
-        all_campaigns = [campaign.to_dict() for campaign in campaigns]
+        all_campaigns = [campaign.to_dict() for campaign in campaigns if campaign.deleted_on is None]
         return success(all_campaigns)
 
     @staticmethod
