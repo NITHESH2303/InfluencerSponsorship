@@ -11,3 +11,9 @@ SQLAlchemy==2.0.31
 
 celery~=5.4.0
 Flask-Cors~=5.0.0
+httplib2shim~=0.0.3
+protobuf~=5.28.3
+google-auth-oauthlib~=1.2.1
+google-api-python-client~=2.154.0
+gevent
+requests~=2.32.3

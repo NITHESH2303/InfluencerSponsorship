@@ -7,6 +7,7 @@ from flask_security import verify_password, hash_password, UserMixin, RoleMixin
 from sqlalchemy.orm import validates
 
 from application.database import db
+from routes.Reports import ReportsAPI
 from validations.RoleValidations import RoleValidations
 
 
@@ -19,8 +20,14 @@ class Model(db.Model):
 
 class AdStatus(Enum):
     PENDING = 'Pending'
+    NEGOTIATION = 'Negotiation'
     ACCEPTED = 'Accepted'
     REJECTED = 'Rejected'
+    COMPLETED = 'Completed'
+
+def get_AdStatus():
+    adstatus = [status.value for status in AdStatus]
+    return adstatus
 
 class CampaignStatus(Enum):
     YetToStart = 'YetToStart'
@@ -34,6 +41,10 @@ class CampaignNiche(Enum):
     Food = 'Food'
     Travel = 'Travel'
     Education = 'Education'
+
+def get_niches():
+    niches = [niche.value for niche in CampaignNiche]
+    return niches
 
 class UserRoles(Model):
     __tablename__ = 'user_roles'
@@ -65,6 +76,9 @@ class User(Model, UserMixin):
     deleted_on = db.Column(db.DateTime, default=None)
     restored_on = db.Column(db.DateTime, default=None)
     deletion_count = db.Column(db.Integer, default=0)
+    influencer = db.relationship('Influencer', back_populates='user', foreign_keys='Influencer.userid')
+    sponsor = db.relationship('Sponsor', back_populates='user', foreign_keys='Sponsor.userid')
+
 
     def add_role(self, role):
         current_roles = self.get_cached_role_names()
@@ -119,6 +133,10 @@ class Sponsor(Model):
     description = db.Column(db.String)
     status = db.Column(db.Integer, default=0)
     campaigns = db.relationship('Campaign', backref='sponsor', lazy=True)
+    user = db.relationship('User', back_populates='sponsor', foreign_keys=[userid])
+
+    def generate_monthly_report(self, start_date, end_date):
+        return ReportsAPI.generate_sponsor_monthly_report(self, start_date, end_date)
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
@@ -144,11 +162,12 @@ class Influencer(Model):
     followers = db.Column(db.Integer, nullable=False)
     category = db.Column(db.String, nullable=False)
     ads = db.relationship('Ads', backref='influencer', lazy=True)
+    user = db.relationship('User', back_populates='influencer', foreign_keys=[userid])
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
         data = {
-            "userid": self.userid,
+            "influencer_id": self.id,
             "username": self.username,
             "social_media_profiles": [
                 {
@@ -161,6 +180,15 @@ class Influencer(Model):
             "about": self.about,
             "category": self.category,
             "followers": self.followers,
+            "ads": [ {
+                "ad_id": ad.id,
+                "campaign_id": ad.campaign_id,
+                "sponsor_id": ad.sponsor_id,
+                "requirement": ad.requirement,
+                "amount": ad.amount,
+                "status": ad.status.value,
+                "campaign_name": ad.campaign.name
+            } for ad in self.ads if ad.deleted_on is None ]
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
@@ -176,11 +204,6 @@ class SocialMediaProfile(Model):
     __table_args__ = (
         db.UniqueConstraint('platform', 'username', name='uq_platform_username'),
     )
-
-
-def get_niches():
-    niches = [niche.value for niche in CampaignNiche]
-    return niches
 
 
 class Campaign(Model):
@@ -200,6 +223,12 @@ class Campaign(Model):
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
+        spent_amount = sum(ad.amount for ad in self.ads if ad.deleted_on is None)
+        remaining_budget = self.budget - spent_amount
+        current_date = datetime.utcnow()
+        total_duration = (self.end_date - self.start_date).days
+        elapsed_duration = (current_date - self.start_date).days if current_date > self.start_date else 0
+        progress_percentage = min(100, max(0, (elapsed_duration / total_duration) * 100)) if total_duration > 0 else 0
         data = {
             "campaign_id": self.id,
             "sponsor_id": self.sponsor_id,
@@ -211,6 +240,9 @@ class Campaign(Model):
             "status": self.status.value,
             "visibility": self.visibility,
             "niche": self.niche.value,
+            "spent_amount": spent_amount,
+            "remaining_budget": remaining_budget,
+            "progress_percentage": progress_percentage
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
@@ -219,6 +251,7 @@ class Ads(Model):
     __tablename__ = 'ads'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
+    sponsor_id = db.Column(db.Integer, db.ForeignKey('sponsor.id'), nullable=False)
     influencer_id = db.Column(db.Integer, db.ForeignKey('influencer.id'))
     status = db.Column(db.Enum(AdStatus), default=AdStatus.PENDING)
     amount = db.Column(db.Integer, nullable=False)
@@ -233,18 +266,22 @@ class Ads(Model):
         if not campaign:
             raise IntegrityError(None, None, f"Campaign with ID {self.campaign_id} does not exist.")
 
-        total_ad_cost = sum(ad.amount for ad in campaign.ads if not ad.deleted_on)
+        total_ad_cost = sum(ad.amount for ad in campaign.ads if not ad.deleted_on and (self.id is None or ad.id != self.id))
 
         if total_ad_cost + value > campaign.budget:
             raise ValueError(f"Ad amount exceeds the remaining budget of {campaign.budget - total_ad_cost}.")
 
         return value
 
-    def to_dict(self, exclude=None):
+
+
+    def to_dict(self, include=None, exclude=None):
+        include = include or []
         exclude = exclude or []
         data = {
             "ad_id": self.id,
             "campaign_id": self.campaign_id,
+            "sponsor_id": self.sponsor_id,
             "influencer_id": self.influencer_id,
             "status": self.status.value,
             "amount": self.amount,
@@ -252,4 +289,10 @@ class Ads(Model):
             "requirement": self.requirement,
             "messages": self.messages,
         }
-        return {key : val for key, val in data.items() if key not in exclude}
+        if 'sponsor_username' in include:
+            sponsor = Sponsor.query.get(self.sponsor_id)
+            data['sponsor_username'] = sponsor.username if sponsor else None
+        if 'influencer_username' in include:
+            influencer = Influencer.query.get(self.influencer_id)
+            data['influencer_username'] = influencer.username if influencer else None
+        return {key: val for key, val in data.items() if key not in exclude}

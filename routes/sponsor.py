@@ -80,13 +80,29 @@ class SponsorAPI(Resource):
         if sponsor_id is None:
             return self.__get_sponsor_meta()
         sponsor = Sponsor.query.filter_by(id=sponsor_id).one()
-        return success(sponsor.to_dict())
+        user = User.query.get(sponsor.userid)
+        campaigns = [{"id": c.id, "name": c.name, "start_date": c.start_date, "end_date": c.end_date} for c in sponsor.campaigns if c.deleted_on is None]
+
+        return success({
+            "userid": user.id,
+            "username": sponsor.username,
+            "company_name": sponsor.company_name,
+            "industry_type": sponsor.industry_type,
+            "description": sponsor.description,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "campaigns": campaigns,
+        })
 
     def __get_sponsor_meta(self):
         current_user = get_jwt()
         sponsor = Sponsor.query.filter_by(userid=current_user['user_id']).one()
         sponsor_data = sponsor.to_dict()
         return success(sponsor_data)
+
+    # def __get_sponsor_profile(self, username):
+
 
     @staticmethod
     def get_sponsor_from_userid(userid):

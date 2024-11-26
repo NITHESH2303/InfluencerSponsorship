@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .stats .stat {
+            width: 30%;
+            text-align: center;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .list-item {
+            margin: 5px 0;
+            padding: 8px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Monthly Report</h1>
+        <p><strong>Period:</strong> {{ report['report_period']['start_date'] }}
+            to {{ report['report_period']['end_date'] }}</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <h2>Total Ads</h2>
+            <p>{{ report['total_ads'] }}</p>
+        </div>
+        <div class="stat">
+            <h2>Total Spent</h2>
+            <p>${{ report['total_spent'] }}</p>
+        </div>
+        <div class="stat">
+            <h2>Budget Utilization</h2>
+            <p>{{ report['average_budget_utilization'] }}%</p>
+        </div>
+    </div>
+
+    <div>
+        <h2>Top Campaigns</h2>
+        {% if report['top_campaigns'] %}
+            <ul>
+                {% for campaign in report['top_campaigns'] %}
+                    <li class="list-item">
+                        <strong>{{ campaign['campaign_name'] }}</strong><br>
+                        ROI: {{ campaign['roi'] }}<br>
+                        Spent: ${{ campaign['spent'] }}<br>
+                        Budget: ${{ campaign['budget'] }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No top campaigns for this period.</p>
+        {% endif %}
+    </div>
+
+    <div>
+        <h2>Ads by Status</h2>
+        <ul>
+            {% for status, count in report['ads_by_status'].items() %}
+                <li class="list-item">{{ status }}: {{ count }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <h2>Audience Segmentation</h2>
+        <ul>
+            {% for region, engagement in report['audience_segmentation']['engagement_by_region'].items() %}
+                <li class="list-item">{{ region }}: {{ engagement }}% engagement</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="footer">
+        <p>This report was auto-generated. For any queries, contact support.</p>
+    </div>
+</div>
+</body>
+</html>
