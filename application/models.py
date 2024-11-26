@@ -7,6 +7,7 @@ from flask_security import verify_password, hash_password, UserMixin, RoleMixin
 from sqlalchemy.orm import validates
 
 from application.database import db
+from routes.Reports import ReportsAPI
 from validations.RoleValidations import RoleValidations
 
 
@@ -75,6 +76,9 @@ class User(Model, UserMixin):
     deleted_on = db.Column(db.DateTime, default=None)
     restored_on = db.Column(db.DateTime, default=None)
     deletion_count = db.Column(db.Integer, default=0)
+    influencer = db.relationship('Influencer', back_populates='user', foreign_keys='Influencer.userid')
+    sponsor = db.relationship('Sponsor', back_populates='user', foreign_keys='Sponsor.userid')
+
 
     def add_role(self, role):
         current_roles = self.get_cached_role_names()
@@ -129,6 +133,10 @@ class Sponsor(Model):
     description = db.Column(db.String)
     status = db.Column(db.Integer, default=0)
     campaigns = db.relationship('Campaign', backref='sponsor', lazy=True)
+    user = db.relationship('User', back_populates='sponsor', foreign_keys=[userid])
+
+    def generate_monthly_report(self, start_date, end_date):
+        return ReportsAPI.generate_sponsor_monthly_report(self, start_date, end_date)
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
@@ -154,6 +162,7 @@ class Influencer(Model):
     followers = db.Column(db.Integer, nullable=False)
     category = db.Column(db.String, nullable=False)
     ads = db.relationship('Ads', backref='influencer', lazy=True)
+    user = db.relationship('User', back_populates='influencer', foreign_keys=[userid])
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
@@ -214,6 +223,12 @@ class Campaign(Model):
 
     def to_dict(self, exclude=None):
         exclude = exclude or []
+        spent_amount = sum(ad.amount for ad in self.ads if ad.deleted_on is None)
+        remaining_budget = self.budget - spent_amount
+        current_date = datetime.utcnow()
+        total_duration = (self.end_date - self.start_date).days
+        elapsed_duration = (current_date - self.start_date).days if current_date > self.start_date else 0
+        progress_percentage = min(100, max(0, (elapsed_duration / total_duration) * 100)) if total_duration > 0 else 0
         data = {
             "campaign_id": self.id,
             "sponsor_id": self.sponsor_id,
@@ -225,6 +240,9 @@ class Campaign(Model):
             "status": self.status.value,
             "visibility": self.visibility,
             "niche": self.niche.value,
+            "spent_amount": spent_amount,
+            "remaining_budget": remaining_budget,
+            "progress_percentage": progress_percentage
         }
         return {key: val for key, val in data.items() if key not in exclude}
 

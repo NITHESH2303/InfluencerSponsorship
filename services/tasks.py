@@ -1,6 +1,5 @@
 import base64
 import os
-from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 
 import httplib2shim
@@ -9,11 +8,10 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-
 from sqlalchemy import and_
 
 from application.database import db
-from application.models import Influencer, AdStatus, User, Role, Ads
+from application.models import Influencer, AdStatus, Ads, Sponsor
 from application.response import internal_server_error
 from application.utils import get_follower_count
 from services.celery_app import celery
@@ -48,27 +46,33 @@ def update_all_influencers_follower_counts():
 
 @celery.task()
 def send_daily_reminders():
-    users = db.session.query(User, Role).filter(Role.name == "influencer").all()
-    for user in users:
+    influencers = Influencer.query.all()
+    for influencer in influencers:
         try:
-            pendingAds = Ads.query.filter(and_(Ads.influencer_id == user.user_id, Ads.status == AdStatus.PENDING)).all()
+            pendingAds = Ads.query.filter(
+                and_(Ads.influencer_id == influencer.id, Ads.status == AdStatus.PENDING)).all()
             if pendingAds:
                 subject = "Daily Reminder: Check Your Pending Ads"
                 email_body = f"""
-                Hi {user.username},
+                Hi {influencer.username},
 
                 You have pending ad requests awaiting your action.
                 Visit your dashboard to view and accept these requests.
 
                 Or, check out the public ad requests to find new opportunities.
                 """
-                send_html_email.delay(email_body, user.email, subject)
+                send_html_email.delay(email_body, "nitheshsenthil2303@gmail.com", subject, "nitheshkanna23@gmail.com")
                 db.session.commit()
         except Exception as e:
             db.session.rollback()
             return internal_server_error(e)
 
-    return {'task': 'remainders'}
+    # return {'task': 'remainders'}
+
+
+@celery.task
+def send_monthly_reports():
+    Sponsor.generate_reports_for_all_sponsors()
 
 @celery.task()
 def send_html_email(body, email, subject, sender):

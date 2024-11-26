@@ -7,10 +7,11 @@ from routes.adminOperationsAPI import AdminOperationsAPI
 from routes.auth import AuthAPI
 from routes.campaigns import CampaignsAPI
 from routes.emailAPI import EmailAPI
-from routes.influencer import InfluencerAPI
 from routes.enum import EnumAPI
+from routes.influencer import InfluencerAPI
 from routes.sponsor import SponsorAPI
 from routes.user import UserAPI
+from services.trigger import TriggerAPI
 
 route_bp = Blueprint('routes', __name__)
 api = Api(route_bp)
@@ -71,6 +72,9 @@ api.add_resource(EnumAPI, '/api/adstatus', methods=['GET'], endpoint='list_adsta
 
 #emailAPI routes
 api.add_resource(EmailAPI, '/api/send_emails', methods=['POST'], endpoint='list_emails')
+
+# triggerJobs routes
+api.add_resource(TriggerAPI, '/api/trigger/daily_remainders', methods=['POST'], endpoint='trigger_daily_remainders')
 
 def init_app(app):
     app.register_blueprint(route_bp)
