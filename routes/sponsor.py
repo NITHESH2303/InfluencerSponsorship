@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlite3 import IntegrityError
 
 from flask import current_app, request
@@ -84,7 +85,20 @@ class SponsorAPI(Resource):
             return self.__get_sponsor_meta()
         sponsor = Sponsor.query.filter_by(id=sponsor_id).one()
         user = User.query.get(sponsor.userid)
-        campaigns = [{"id": c.id, "name": c.name, "start_date": c.start_date, "end_date": c.end_date} for c in sponsor.campaigns if c.deleted_on is None]
+        current_date = datetime.now()
+        campaigns = [{
+            "id": c.id,
+            "name": c.name,
+            "start_date": c.start_date,
+            "end_date": c.end_date,
+            "progress_percentage": (
+                lambda total_duration, elapsed_duration:
+                min(100, max(0, (elapsed_duration / total_duration) * 100)) if total_duration > 0 else 0
+            )(
+                (c.end_date - c.start_date).days,
+                (current_date - c.start_date).days if current_date > c.start_date else 0
+            )
+        } for c in sponsor.campaigns if c.deleted_on is None]
 
         return success({
             "userid": user.id,
@@ -93,6 +107,7 @@ class SponsorAPI(Resource):
             "industry_type": sponsor.industry_type,
             "description": sponsor.description,
             "email": user.email,
+            "verification_status": sponsor.status,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "campaigns": campaigns,

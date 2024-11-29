@@ -121,6 +121,7 @@ class InfluencerAPI(Resource):
                 "campaign_name": ad.campaign.name
                 }
                for ad in influencer.ads  if ad.deleted_on is None]
+        sponsor_id = user.sponsor.id if user.sponsor else None
         return success({
             "username": influencer.username,
             "about": influencer.about,
@@ -130,6 +131,7 @@ class InfluencerAPI(Resource):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "ads": ads,
+            "sponsor_id": sponsor_id
             }
         )
 

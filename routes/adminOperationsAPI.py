@@ -1,12 +1,13 @@
+from flask import request
 from flask_restful import Resource
-from flask_security import roles_required
 from sqlalchemy import or_
 from sqlalchemy.exc import NoResultFound
 
 from application import db
-from application.models import Sponsor
-from application.response import success, create_response
+from application.models import Sponsor, User
+from application.response import success, create_response, resource_not_found
 from routes.decorators import jwt_roles_required
+from routes.emailAPI import EmailAPI
 from routes.sponsor import SponsorAPI
 
 
@@ -14,10 +15,23 @@ class AdminOperationsAPI(Resource):
 
     @jwt_roles_required('admin')
     def get(self):
+        endpoint = request.endpoint
+        if endpoint == 'routes.list_flagged_users':
+            return self.get_flagged_users()
         return self.__get_pending_sponsor_approvals()
 
     @jwt_roles_required('admin')
-    def post(self, sponsor_id):
+    def post(self, sponsor_id=None):
+        endpoint = request.endpoint
+
+        if endpoint == 'routes.flag_user':
+            data = request.get_json()
+            id = data.get('user_id')
+            return self.flag_user(id)
+        elif endpoint == 'routes.unflag_user':
+            data = request.get_json()
+            id = data.get('user_id')
+            return self.unflag_user(id)
         return self.__change_sponsor_registration_status(sponsor_id)
 
     @staticmethod
@@ -43,3 +57,40 @@ class AdminOperationsAPI(Resource):
         except Exception as e:
             db.session.rollback()
             return create_response(f"An error occurred: {str(e)}", 500)
+
+    @staticmethod
+    def flag_user(user_id):
+        reason = request.json.get('reason', None)
+        user = User.query.get(user_id)
+        if not user:
+            return resource_not_found('User not found')
+        user.is_flagged = True
+        user.flag_reason = reason
+        db.session.commit()
+        EmailAPI.notify_flagged_user(user.email, reason)
+        return success( f'User {user.username} flagged successfully')
+
+    @staticmethod
+    def unflag_user(user_id):
+        user = User.query.get(user_id)
+        if not user:
+            return resource_not_found('User not found')
+        user.is_flagged = False
+        user.flag_reason = None
+        db.session.commit()
+        return success(f'User {user.username} unflagged successfully')
+
+    @staticmethod
+    def get_flagged_users():
+        flagged_users = User.query.filter_by(is_flagged=True).all()
+        data = [
+            {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'flag_reason': user.flag_reason,
+                'role': 'Sponsor' if user.sponsor else 'Influencer',
+            }
+            for user in flagged_users
+        ]
+        return success(data)

@@ -1,5 +1,3 @@
-import os
-
 import click
 import redis
 from flask import Flask, g, request, make_response

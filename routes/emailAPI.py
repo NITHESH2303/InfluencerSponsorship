@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from flask import render_template
+from flask import render_template, request
 from flask_restful import Resource
 
 from application.models import Sponsor
@@ -10,6 +10,10 @@ from services.tasks import send_html_email
 class EmailAPI(Resource):
 
     def post(self):
+        endpoint = request.endpoint
+        if endpoint == 'notify_flag_users':
+            reason = request.args.get('reason')
+            return self.notify_flagged_user(None, reason)
         self.generate_reports_for_all_sponsors()
 
     def send_email(self):
@@ -39,3 +43,14 @@ class EmailAPI(Resource):
             send_html_email.delay(html_content, "nitheshsenthil2303@gmail.com", subject, "nitheshkanna23@gmail.com")
 
         return reports
+
+    @staticmethod
+    def notify_flagged_user(email, reason):
+        body = f"Your account has been flagged for the following reason: {reason}"
+        msg = render_template("registration.html", body=body)
+        send_html_email.delay(
+            msg,
+            "nitheshsenthil2303@gmail.com",
+            "Your Account Has Been Flagged",
+            "nithehkanna23@gmail.com",
+        )

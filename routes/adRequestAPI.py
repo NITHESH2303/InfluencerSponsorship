@@ -40,7 +40,7 @@ class AdRequestAPI(Resource):
             ads = query.all()
             if not ads:
                 return resource_not_found("No ad requests found.")
-            return success([ad.to_dict(include=['sponsor_username', 'influencer_username']) for ad in ads])
+            return success([ad.to_dict(include=['sponsor_username', 'influencer_username', 'campaign_name']) for ad in ads])
 
         if campaign_id and ad_id:
             ad = Ads.query.filter_by(id=ad_id, campaign_id=campaign_id, deleted_on=None).first()

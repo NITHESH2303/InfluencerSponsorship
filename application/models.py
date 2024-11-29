@@ -76,8 +76,10 @@ class User(Model, UserMixin):
     deleted_on = db.Column(db.DateTime, default=None)
     restored_on = db.Column(db.DateTime, default=None)
     deletion_count = db.Column(db.Integer, default=0)
-    influencer = db.relationship('Influencer', back_populates='user', foreign_keys='Influencer.userid')
-    sponsor = db.relationship('Sponsor', back_populates='user', foreign_keys='Sponsor.userid')
+    is_flagged = db.Column(db.Boolean, default=False)
+    flag_reason = db.Column(db.String, default=None)
+    influencer = db.relationship('Influencer', back_populates='user', foreign_keys='Influencer.userid', uselist=False)
+    sponsor = db.relationship('Sponsor', back_populates='user', foreign_keys='Sponsor.userid', uselist=False)
 
 
     def add_role(self, role):
@@ -119,6 +121,8 @@ class User(Model, UserMixin):
             "email": self.email,
             "image": self.image,
             "role": [role.name for role in self.roles],
+            "influencer_id": self.influencer.id if self.influencer else None,
+            "sponsor_id": self.sponsor.id if self.sponsor else None
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
@@ -142,6 +146,7 @@ class Sponsor(Model):
         exclude = exclude or []
         data = {
             "sponsorid" : self.id,
+            "user_id": self.userid,
             "username": self.username,
             "company_name": self.company_name,
             "industry_type": self.industry_type,
@@ -168,6 +173,7 @@ class Influencer(Model):
         exclude = exclude or []
         data = {
             "influencer_id": self.id,
+            "user_id": self.userid,
             "username": self.username,
             "social_media_profiles": [
                 {
@@ -180,6 +186,8 @@ class Influencer(Model):
             "about": self.about,
             "category": self.category,
             "followers": self.followers,
+            "is_flagged": self.user.is_flagged,
+            "flag_reason": self.user.flag_reason,
             "ads": [ {
                 "ad_id": ad.id,
                 "campaign_id": ad.campaign_id,
@@ -289,6 +297,9 @@ class Ads(Model):
             "requirement": self.requirement,
             "messages": self.messages,
         }
+        if 'campaign_name' in include:
+            campaign = Campaign.query.get(self.campaign_id)
+            data['campaign_name'] = campaign.name if campaign else None
         if 'sponsor_username' in include:
             sponsor = Sponsor.query.get(self.sponsor_id)
             data['sponsor_username'] = sponsor.username if sponsor else None

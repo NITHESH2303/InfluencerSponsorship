@@ -1,0 +1,14 @@
+.idea/
+.venv/
+__pycache__/
+application/__pycache__/
+routes/__pycache__/
+validations/__pycache__/
+migrations/
+instance/
+export/
+
+mad2.sqlite3
+dump.rdb
+testapi.ipynb
+application/tokens.py
