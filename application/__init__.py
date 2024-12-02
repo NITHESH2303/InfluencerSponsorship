@@ -1,6 +1,6 @@
 import click
 import redis
-from flask import Flask, g, request, make_response
+from flask import Flask, g
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, verify_jwt_in_request, get_jwt
@@ -93,15 +93,15 @@ def create_app():
 
     print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
-    @app.before_request
-    def handle_options():
-        if request.method == "OPTIONS":
-            response = make_response()
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
-            response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-            response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
-            response.headers.add("Access-Control-Allow-Credentials", "true")
-            return response
+    # @app.before_request
+    # def handle_options():
+    #     if request.method == "OPTIONS":
+    #         response = make_response()
+    #         response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    #         response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+    #         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    #         response.headers.add("Access-Control-Allow-Credentials", "true")
+    #         return response
 
     @app.before_request
     def load_roles_from_jwt():

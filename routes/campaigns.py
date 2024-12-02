@@ -68,7 +68,7 @@ class CampaignsAPI(Resource):
         campaign = Campaign.query.filter_by(id=campaign_id).one()
         if not campaign:
             return resource_not_found("Campaign not found")
-        return success(campaign.to_dict())
+        return success(campaign.to_dict(include=["sponsor_username"]))
 
     def __create_campaign(self):
         args = self.campaign_input_fields.parse_args()

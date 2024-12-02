@@ -30,7 +30,6 @@ class AuthAPI(Resource):
         args = self.auth_input_fields.parse_args()
         identifier = args["identifier"]
         password = args["password"]
-        new_password = args["new_password"]
         try:
             user = User.query.filter_by(fs_uniquifier=get_jwt_identity()).one()
             if not verify_password(password, user.password_hash):
@@ -44,10 +43,8 @@ class AuthAPI(Resource):
                         user.email = identifier
                     else:
                         return validation_error("Invalid Email")
+                    db.session.commit()
                     return create_response("Email updated successfully", 200)
-
-            if new_password:
-                user.password_hash = user.set_password(new_password)
 
             db.session.commit()
             return create_response("Password updated successfully", 200)

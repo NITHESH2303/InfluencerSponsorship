@@ -1,5 +1,7 @@
-from celery import Celery
 import flask
+from celery import Celery
+from celery.schedules import crontab
+
 
 class FlaskCelery(Celery):
     def __init__(self, *args, **kwargs):
@@ -31,6 +33,13 @@ class FlaskCelery(Celery):
             broker_url=app.config['CELERY_BROKER_URL'],
             result_backend=app.config['CELERY_RESULT_BACKEND']
         )
+        self.conf.timezone = 'UTC'
+        self.conf.beat_schedule = {
+            'run_periodic_tasks': {
+                'task': 'services.tasks.run_periodic_tasks',
+                'schedule': crontab(minute='*/5'),
+            }
+        }
 
 celery = FlaskCelery()
 

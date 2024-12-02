@@ -14,12 +14,20 @@ from sqlalchemy import and_
 
 from application.database import db
 from application.models import Influencer, AdStatus, Ads, Sponsor
-from application.response import internal_server_error
+from application.response import internal_server_error, success
 from application.utils import get_follower_count
 from services.celery_app import celery
 from token_gen import SCOPES
 
 celery.conf.timezone = 'Asia/Kolkata'
+
+@celery.task()
+def run_periodic_tasks():
+    from routes.emailAPI import EmailAPI
+    send_daily_reminders()
+    EmailAPI.generate_reports_for_all_sponsors()
+    update_all_influencers_follower_counts()
+    return success("Periodic tasks done")
 
 @celery.task()
 def update_follower_counts(influencer_id):

@@ -12,6 +12,7 @@ from routes.campaigns import CampaignsAPI
 from routes.emailAPI import EmailAPI
 from routes.enum import EnumAPI
 from routes.influencer import InfluencerAPI
+from routes.passwordChange import PasswordChangeAPI
 from routes.search import SearchAPI
 from routes.sponsor import SponsorAPI
 from routes.statistics import StatisticsAPI
@@ -21,15 +22,21 @@ from services.trigger import TriggerAPI
 route_bp = Blueprint('routes', __name__)
 api = Api(route_bp)
 
-# AuthAPI routes with unique endpoints
+# AuthAPI routes
 api.add_resource(AuthAPI, '/api/auth/login', methods=['POST'], endpoint='auth_login')            # Login
 api.add_resource(AuthAPI, '/api/auth/token-refresh', methods=['PATCH'], endpoint='auth_token_refresh')   # Token refresh
 api.add_resource(AuthAPI, '/api/auth/logout', methods=['DELETE'], endpoint='auth_logout')         # Logout
+api.add_resource(AuthAPI, '/api/auth/change_auth', methods=['PUT'], endpoint='change_auth')
 
-# UserAPI routes with unique endpoints
-api.add_resource(UserAPI, '/api/users', endpoint='users_list')
+# PasswordChangeAPI
+api.add_resource(PasswordChangeAPI, '/api/auth/change_password', methods=['PUT'], endpoint='auth_password_change')
+
+# UserAPI routes with
+api.add_resource(UserAPI, '/api/users', methods=['GET'], endpoint='users_list')
+api.add_resource(UserAPI, '/api/users/meta', methods=['GET'], endpoint='user_meta')
 api.add_resource(UserAPI, '/api/user/signup', methods=['POST'], endpoint='user_signup')           # Sign up
-api.add_resource(UserAPI, '/api/user/profile/<string:username>', methods=['GET', 'PUT'], endpoint='user_profile')    # Profile management (GET for fetching profile, PUT for updating profile)
+api.add_resource(UserAPI, '/api/user/profile/<int:user_id>', methods=['GET'], endpoint='user_profile')
+api.add_resource(UserAPI, '/api/user/profile/edit', methods=['PATCH'], endpoint='edit_user_profile')
 api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user_delete')         # Soft delete account
 
 # SponsorAPI routes
@@ -89,6 +96,7 @@ api.add_resource(TriggerAPI, '/api/trigger/daily_remainders', methods=['POST'], 
 
 #export routes
 api.add_resource(ReportsAPI, '/api/export_campaigns/<int:sponsor_id>', methods=['POST'], endpoint='export_campaigns')
+api.add_resource(ReportsAPI, '/api/sponsor/stats/<int:sponsor_id>', methods=['GET'], endpoint='sponsor_stats')
 
 # search routes
 api.add_resource(SearchAPI, '/api/search', methods=['GET'], endpoint='search')

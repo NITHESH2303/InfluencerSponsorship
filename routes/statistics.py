@@ -36,7 +36,6 @@ class StatisticsAPI(Resource):
         total_budget = db.session.query(func.sum(Campaign.budget)).scalar() or 0
         avg_budget = db.session.query(func.avg(Campaign.budget)).scalar() or 0
 
-        # Convert query results to serializable format
         campaigns_by_date = {date: count for date, count in campaigns_by_date}
         ad_requests_by_date = {date: count for date, count in ad_requests_by_date}
 
@@ -61,7 +60,7 @@ class StatisticsAPI(Resource):
             },
         }
 
-        return data  # Return data directly instead of success(data)
+        return data
 
     # def get_influencer_analytics(self):
     #     reach_distribution = db.session.query(
@@ -105,7 +104,6 @@ class StatisticsAPI(Resource):
             func.strftime("%Y-%m-%d", Ads.created_on), func.count(Ads.id)
         ).filter(Ads.created_on >= func.date('now', '-30 days')).group_by(func.strftime("%Y-%m-%d", Ads.created_on)).all()
 
-        # Convert query results to serializable format
         campaigns_trend_dict = {date: count for date, count in campaigns_trend}
         ad_requests_trend_dict = {date: count for date, count in ad_requests_trend}
 

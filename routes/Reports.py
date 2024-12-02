@@ -1,3 +1,6 @@
+from datetime import date
+
+from flask import request
 from flask_restful import Resource
 
 from application.response import internal_server_error, success
@@ -5,16 +8,24 @@ from application.response import internal_server_error, success
 
 class ReportsAPI(Resource):
     @staticmethod
-    def generate_sponsor_monthly_report(sponsor, start_date, end_date):
+    def generate_sponsor_monthly_report(sponsor, start_date=None, end_date=None):
         from application.models import Campaign, AdStatus
 
-        # Query all campaigns for the sponsor within the date range
-        campaigns = Campaign.query.filter(
-            Campaign.sponsor_id == sponsor.id,
-            # Campaign.deleted_on is None,
-            # Campaign.start_date >= start_date,
-            # Campaign.end_date <= end_date
-        ).all()
+        if start_date is None and end_date is None:
+            today = date.today()
+            start_date = date(today.year, 1, 1)
+            end_date = date(today.year, 12, 31)
+
+            campaigns = Campaign.query.filter(
+                Campaign.sponsor_id == sponsor.id,
+                Campaign.deleted_on == None,
+                Campaign.start_date >= start_date,
+                Campaign.end_date <= end_date
+            ).all()
+        else:
+            campaigns = Campaign.query.filter(
+                Campaign.sponsor_id == sponsor.id,
+            ).all()
 
         campaign_data = []
         total_ads = 0
@@ -22,10 +33,9 @@ class ReportsAPI(Resource):
         total_spent = 0
         total_budget = 0
         niches_targeted = set()
-        # total_engagements = 0
         top_campaigns = []
 
-        # Historical data placeholders
+
         historical_trends = {
             "spending_trends": [],
             "seasonality": {
@@ -34,7 +44,7 @@ class ReportsAPI(Resource):
             }
         }
 
-        # Processing each campaign
+
         for campaign in campaigns:
             campaign_ads = [ad for ad in campaign.ads if ad.deleted_on is None]
             spent_amount = sum(ad.amount for ad in campaign_ads)
@@ -48,18 +58,20 @@ class ReportsAPI(Resource):
 
             niches_targeted.add(campaign.niche.value)
 
-            # ROI calculation
+
             roi = (spent_amount / campaign.budget) if campaign.budget > 0 else 0
             top_campaigns.append({
                 "campaign_name": campaign.name,
                 "roi": roi,
                 "spent": spent_amount,
-                "budget": campaign.budget
+                "budget": campaign.budget,
+                "campaign_status": campaign.status.value,
             })
 
-            # Campaign details
+
             campaign_data.append({
                 "campaign_name": campaign.name,
+                "campaign_description": campaign.description,
                 "status": campaign.status.value,
                 "start_date": campaign.start_date,
                 "end_date": campaign.end_date,
@@ -68,21 +80,20 @@ class ReportsAPI(Resource):
                 "remaining_budget": campaign.budget - spent_amount,
             })
 
-        # Sort top campaigns by ROI
+
         top_campaigns = sorted(top_campaigns, key=lambda x: x["roi"], reverse=True)[:5]
 
-        # Generating historical trends
         historical_trends["spending_trends"] = [
             {"month": campaign.start_date.strftime("%B"), "amount_spent": sum(ad.amount for ad in campaign.ads)}
             for campaign in campaigns
         ]
-        # Mocking engagement data
+
         historical_trends["seasonality"]["average_engagement_rate_by_month"] = {
             "January": 10, "June": 25
         }
         historical_trends["seasonality"]["months_with_high_engagement"] = ["June", "December"]
 
-        # Audience segmentation insights
+
         audience_segmentation = {
             "top_performing_categories": list(niches_targeted),  # Assuming niches represent categories
             "engagement_by_region": {
@@ -92,7 +103,7 @@ class ReportsAPI(Resource):
             }
         }
 
-        # Ad performance insights
+
         ad_performance_insights = {
             "cost_efficiency": {
                 "average_cost_per_ad": total_spent / total_ads if total_ads > 0 else 0,
@@ -107,7 +118,7 @@ class ReportsAPI(Resource):
         #     "best_campaigns_by_conversion_rate": sorted(campaign_data, key=lambda x: x["engagements"], reverse=True)[:3]
         # }
 
-        # Final report assembly
+
         report = {
             "sponsor_name": sponsor.company_name,
             "report_period": {
@@ -128,9 +139,6 @@ class ReportsAPI(Resource):
 
         return report
 
-    def post(self, sponsor_id):
-        return self.__export_campaigns(sponsor_id)
-
     def __export_campaigns(self, sponsor_id):
         from services.tasks import export_campaigns_as_csv
         if not sponsor_id:
@@ -139,3 +147,16 @@ class ReportsAPI(Resource):
         task = export_campaigns_as_csv.delay(sponsor_id)
 
         return success(f"Export initiated for task {task.id}! Check back later")
+
+    def post(self, sponsor_id):
+        endpoint = request.endpoint
+        if endpoint == 'routes.export_campaigns':
+            return self.__export_campaigns(sponsor_id)
+
+    def get(self, sponsor_id):
+        from application.models import Sponsor
+        sponsor = Sponsor.query.get_or_404(sponsor_id)
+        report = self.generate_sponsor_monthly_report(sponsor)
+        return success(report)
+
+
