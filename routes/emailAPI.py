@@ -24,7 +24,8 @@ class EmailAPI(Resource):
         msg_email = render_template("registration.html", body=body)
         send_html_email.delay(msg_email,address, subject,"nitheshkanna23@gmail.com")
 
-    def generate_reports_for_all_sponsors(self):
+    @staticmethod
+    def generate_reports_for_all_sponsors():
         today = datetime.utcnow()
         first_day_last_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
         last_day_last_month = (today.replace(day=1) - timedelta(days=1))

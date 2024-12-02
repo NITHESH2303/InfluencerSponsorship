@@ -1,10 +1,11 @@
 from flask import request
-from flask_jwt_extended import jwt_required, get_jwt_identity, exceptions, verify_jwt_in_request
+from flask_jwt_extended import jwt_required, get_jwt_identity, exceptions, verify_jwt_in_request, get_jwt
 from flask_restful import reqparse, Resource
 from sqlalchemy import exc
 
 from application import User, db
-from application.response import unauthorized, created, create_response, success, duplicate_entry, internal_server_error
+from application.response import unauthorized, created, create_response, success, duplicate_entry, \
+    internal_server_error
 from validations.UserValidation import UserValidation
 
 
@@ -17,13 +18,20 @@ class UserAPI(Resource):
         self.user_input_fields.add_argument("email", required=True, help="This field cannot be blank.")
         self.user_input_fields.add_argument("password", required=True, help="This field cannot be blank.")
 
+        self.user_edit_fields = reqparse.RequestParser()
+        self.user_edit_fields.add_argument("username", required=True, help="This field cannot be blank.")
+        self.user_edit_fields.add_argument("first_name", required=True, help="This field cannot be blank.")
+        self.user_edit_fields.add_argument("last_name", required=True, help="This field cannot be blank.")
+
     @jwt_required(optional=True)
-    def get(self, username=None):
+    def get(self, user_id=None):
         endpoint = request.endpoint
         if endpoint == "routes.users_list":
             return self.__list_users()
+        if endpoint == "routes.user_meta":
+            return self.__get_user_meta()
         try:
-            user = User.query.filter_by(username=username).one()
+            user = User.query.filter_by(id=user_id).one()
             if not user:
                 return create_response("User not found", 404)
 
@@ -51,6 +59,13 @@ class UserAPI(Resource):
         users = User.query.all()
         all_users = [user.to_dict() for user in users if user.username != "admin"]
         return success(all_users)
+
+    def __get_user_meta(self):
+        current_user = get_jwt()
+        if current_user:
+            user_id = current_user["user_id"]
+            user = User.query.filter_by(id=user_id).one()
+            return success(user.to_dict())
 
 
     def post(self):
@@ -80,9 +95,9 @@ class UserAPI(Resource):
             db.session.rollback()
             return duplicate_entry("User", e)
 
-    @jwt_required
-    def put(self):
-        args = self.user_input_fields.parse_args()
+    # @jwt_required
+    def patch(self):
+        args = self.user_edit_fields.parse_args()
         username = args['username']
         first_name = args['first_name']
         last_name = args['last_name']
@@ -101,7 +116,7 @@ class UserAPI(Resource):
                 if getattr(user, field) != value:
                     if field == "username":
                         if User.query.filter_by(username=value).first():
-                            return duplicate_entry("UserName")
+                            return duplicate_entry("UserName", error="")
                     setattr(user, field, value)
                     updated_fields[field] = value
 

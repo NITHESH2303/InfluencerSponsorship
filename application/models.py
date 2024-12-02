@@ -122,7 +122,10 @@ class User(Model, UserMixin):
             "image": self.image,
             "role": [role.name for role in self.roles],
             "influencer_id": self.influencer.id if self.influencer else None,
-            "sponsor_id": self.sponsor.id if self.sponsor else None
+            "sponsor_id": self.sponsor.id if self.sponsor else None,
+            "is_flagged": self.is_flagged,
+            "flag_reason": self.flag_reason,
+            "is_deleted": self.is_deleted,
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
@@ -152,6 +155,8 @@ class Sponsor(Model):
             "industry_type": self.industry_type,
             "description": self.description,
             "verification_status": self.status,
+            "is_flagged": self.user.is_flagged,
+            "flag_reason": self.user.flag_reason,
         }
         return {key: val for key, val in data.items() if key not in exclude}
 
@@ -229,7 +234,8 @@ class Campaign(Model):
     ads = db.relationship('Ads', backref='campaign', lazy=True)
     deleted_on = db.Column(db.DateTime, nullable=True)
 
-    def to_dict(self, exclude=None):
+    def to_dict(self, exclude=None, include=None):
+        include = include or []
         exclude = exclude or []
         spent_amount = sum(ad.amount for ad in self.ads if ad.deleted_on is None)
         remaining_budget = self.budget - spent_amount
@@ -252,6 +258,9 @@ class Campaign(Model):
             "remaining_budget": remaining_budget,
             "progress_percentage": progress_percentage
         }
+        if 'sponsor_username' in include:
+            sponsor = Sponsor.query.get(self.sponsor_id)
+            data['sponsor_username'] = sponsor.username if sponsor else None
         return {key: val for key, val in data.items() if key not in exclude}
 
 
