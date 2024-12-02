@@ -10,14 +10,14 @@ class AdminAPI(Resource):
     def get_overview_stats(self):
         users_count = User.query.count()
         campaigns_count = Campaign.query.count()
-        # flagged_sponsors = Sponsor.query.filter(Sponsor.is_flagged == True).count()
-        # flagged_influencers = Influencer.query.filter(Influencer.is_flagged == True).count()
+        flagged_sponsors = User.query.filter(User.is_flagged == True, User.sponsor != None).count()
+        flagged_influencers = User.query.filter(User.is_flagged == True, User.influencer != None).count()
 
         return success({
             "total_users": users_count,
             "total_campaigns": campaigns_count,
-            # "flagged_sponsors": flagged_sponsors,
-            # "flagged_influencers": flagged_influencers
+            "flagged_sponsors": flagged_sponsors,
+            "flagged_influencers": flagged_influencers
         })
 
     def get(self):

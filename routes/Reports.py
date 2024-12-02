@@ -1,7 +1,9 @@
-from application.response import success
+from flask_restful import Resource
+
+from application.response import internal_server_error, success
 
 
-class ReportsAPI:
+class ReportsAPI(Resource):
     @staticmethod
     def generate_sponsor_monthly_report(sponsor, start_date, end_date):
         from application.models import Campaign, AdStatus
@@ -125,3 +127,15 @@ class ReportsAPI:
         }
 
         return report
+
+    def post(self, sponsor_id):
+        return self.__export_campaigns(sponsor_id)
+
+    def __export_campaigns(self, sponsor_id):
+        from services.tasks import export_campaigns_as_csv
+        if not sponsor_id:
+            return internal_server_error('Sponsor ID is required')
+
+        task = export_campaigns_as_csv.delay(sponsor_id)
+
+        return success(f"Export initiated for task {task.id}! Check back later")

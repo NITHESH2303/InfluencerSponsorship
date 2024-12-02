@@ -1,5 +1,3 @@
-import os
-
 import click
 import redis
 from flask import Flask, g, request, make_response
@@ -52,6 +50,8 @@ def create_app():
 
     app.config['CELERY_BROKER_URL'] = 'redis://127.0.0.1:6379/1'
     app.config['CELERY_RESULT_BACKEND'] = 'redis://127.0.0.1:6379/1'
+
+    app.config['EXPORT_FOLDER'] = "/Users/nithesh-pt7363/Work/Platform/InfluencerSponsorship/export"
 
     # logging.basicConfig(level=logging.INFO)
 

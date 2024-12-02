@@ -1,3 +1,4 @@
+from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity, exceptions, verify_jwt_in_request
 from flask_restful import reqparse, Resource
 from sqlalchemy import exc
@@ -18,6 +19,9 @@ class UserAPI(Resource):
 
     @jwt_required(optional=True)
     def get(self, username=None):
+        endpoint = request.endpoint
+        if endpoint == "routes.users_list":
+            return self.__list_users()
         try:
             user = User.query.filter_by(username=username).one()
             if not user:
@@ -43,6 +47,10 @@ class UserAPI(Resource):
         except Exception as e:
             return create_response(f"Error processing request with Exception : {e}", 500)
 
+    def __list_users(self):
+        users = User.query.all()
+        all_users = [user.to_dict() for user in users if user.username != "admin"]
+        return success(all_users)
 
 
     def post(self):

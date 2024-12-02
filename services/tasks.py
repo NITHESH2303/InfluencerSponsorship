@@ -1,5 +1,7 @@
 import base64
+import csv
 import os
+from datetime import datetime
 from email.mime.text import MIMEText
 
 import httplib2shim
@@ -43,6 +45,33 @@ def update_all_influencers_follower_counts():
         influencers = Influencer.query.all()
         for influencer in influencers:
             update_follower_counts.delay(influencer.id)
+
+@celery.task(bind=True)
+def export_campaigns_as_csv(self,sponsor_id):
+    from application.models import Campaign
+
+    campaigns = Campaign.query.filter_by(sponsor_id=sponsor_id).all()
+
+    filename = f"campaigns_{sponsor_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
+    file_path = os.path.join(current_app.config['EXPORT_FOLDER'], filename)
+
+    os.makedirs(current_app.config['EXPORT_FOLDER'], exist_ok=True)
+
+    with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Name', 'Description', 'Start Date', 'End Date', 'Budget', 'Visibility'])
+        for campaign in campaigns:
+            writer.writerow([
+                campaign.name,
+                campaign.description,
+                campaign.start_date,
+                campaign.end_date,
+                campaign.budget,
+                'Public' if campaign.visibility else 'Private',
+            ])
+
+    self.update_state(state='SUCCESS', meta={'file_path': file_path})
+    return {'file_path': file_path}
 
 @celery.task()
 def send_daily_reminders():

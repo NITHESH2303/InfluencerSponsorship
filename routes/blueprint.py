@@ -1,6 +1,9 @@
+from crypt import methods
+
 from flask import Blueprint
 from flask_restful import Api
 
+from routes.Reports import ReportsAPI
 from routes.adRequestAPI import AdRequestAPI
 from routes.admin import AdminAPI
 from routes.adminOperationsAPI import AdminOperationsAPI
@@ -9,7 +12,9 @@ from routes.campaigns import CampaignsAPI
 from routes.emailAPI import EmailAPI
 from routes.enum import EnumAPI
 from routes.influencer import InfluencerAPI
+from routes.search import SearchAPI
 from routes.sponsor import SponsorAPI
+from routes.statistics import StatisticsAPI
 from routes.user import UserAPI
 from services.trigger import TriggerAPI
 
@@ -22,12 +27,14 @@ api.add_resource(AuthAPI, '/api/auth/token-refresh', methods=['PATCH'], endpoint
 api.add_resource(AuthAPI, '/api/auth/logout', methods=['DELETE'], endpoint='auth_logout')         # Logout
 
 # UserAPI routes with unique endpoints
+api.add_resource(UserAPI, '/api/users', endpoint='users_list')
 api.add_resource(UserAPI, '/api/user/signup', methods=['POST'], endpoint='user_signup')           # Sign up
 api.add_resource(UserAPI, '/api/user/profile/<string:username>', methods=['GET', 'PUT'], endpoint='user_profile')    # Profile management (GET for fetching profile, PUT for updating profile)
 api.add_resource(UserAPI, '/api/user/delete', methods=['DELETE'], endpoint='user_delete')         # Soft delete account
 
 # SponsorAPI routes
 api.add_resource(SponsorAPI, '/api/sponsor/meta', methods=['GET'], endpoint='sponsor_meta')
+api.add_resource(SponsorAPI, '/api/sponsors/list', methods=['GET'], endpoint='sponsor_list')
 api.add_resource(SponsorAPI, '/api/register/sponsor', methods=['POST'], endpoint='sponsor_register')
 api.add_resource(SponsorAPI, '/api/profile/sponsor/<int:sponsor_id>', methods=['GET'], endpoint='sponsor_profile')
 
@@ -44,6 +51,9 @@ api.add_resource(InfluencerAPI, '/api/influencer/adrequests/negotiate', methods=
 # AdminAPI routes
 api.add_resource(AdminOperationsAPI, '/api/admin/operation/approve_sponsor/<int:sponsor_id>', methods=['POST'], endpoint='admin_approve_sponsor')
 api.add_resource(AdminOperationsAPI, '/api/admin/operation/sponsor_approval', methods=['GET'], endpoint='admin_sponsor_approval')
+api.add_resource(AdminOperationsAPI, '/api/admin/operation/flag_user', methods=['POST'], endpoint='flag_user')
+api.add_resource(AdminOperationsAPI, '/api/admin/operation/unflag_user', methods=['POST'], endpoint='unflag_user')
+api.add_resource(AdminOperationsAPI, '/api/admin/operation/flagged_users', methods=['GET'], endpoint='list_flagged_users')
 api.add_resource(AdminAPI, '/api/admin/overview', methods=['GET'], endpoint='admin_overview')
 
 #CampaignsAPI routes
@@ -72,9 +82,19 @@ api.add_resource(EnumAPI, '/api/adstatus', methods=['GET'], endpoint='list_adsta
 
 #emailAPI routes
 api.add_resource(EmailAPI, '/api/send_emails', methods=['POST'], endpoint='list_emails')
+api.add_resource(EmailAPI, '/api/notify/flag_users', methods=['POST'], endpoint='notify_flag_users')
 
 # triggerJobs routes
 api.add_resource(TriggerAPI, '/api/trigger/daily_remainders', methods=['POST'], endpoint='trigger_daily_remainders')
+
+#export routes
+api.add_resource(ReportsAPI, '/api/export_campaigns/<int:sponsor_id>', methods=['POST'], endpoint='export_campaigns')
+
+# search routes
+api.add_resource(SearchAPI, '/api/search', methods=['GET'], endpoint='search')
+
+#statisrics routes
+api.add_resource(StatisticsAPI, '/api/statistics', methods=['GET'], endpoint='statistics')
 
 def init_app(app):
     app.register_blueprint(route_bp)
