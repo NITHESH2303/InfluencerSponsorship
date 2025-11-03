@@ -1,14 +1,51 @@
-.idea/
-.venv/
+# Python
 __pycache__/
-application/__pycache__/
-routes/__pycache__/
-validations/__pycache__/
-migrations/
-instance/
-export/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-mad2.sqlite3
-dump.rdb
-testapi.ipynb
-application/tokens.py
+# Flask
+instance/
+.webassets-cache
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+
+# Gmail API credentials (IMPORTANT!)
+token.json
+credentials.json
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

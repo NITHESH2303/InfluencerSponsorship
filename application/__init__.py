@@ -1,5 +1,6 @@
 import click
 import redis
+import os
 from flask import Flask, g
 from flask_caching import Cache
 from flask_cors import CORS
@@ -14,12 +15,21 @@ from routes.blueprint import init_app as init_routes
 
 
 def create_app():
-    app = Flask(__name__, template_folder= "/Users/nithesh-pt7363/Work/Platform/InfluencerSponsorship/templates")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+    EXPORT_DIR = os.environ.get('EXPORT_FOLDER', '/tmp/export')
+    app = Flask(__name__, template_folder= TEMPLATE_DIR)
     print(app.template_folder)
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./mad2.sqlite3'
-    app.config['SECRET_KEY'] = 'MadTheMad2'
-    app.config['SECURITY_PASSWORD_SALT'] = 'SecretOfMadTheMad2'
+    # Database Configuration - Use PostgreSQL for production
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+        'DATABASE_URL', 
+        'sqlite:///./mad2.sqlite3'
+    ).replace('postgres://', 'postgresql://')  # Fix for Render's postgres:// URL
+    
+    # Security Keys - MUST be environment variables in production
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'MadTheMad2')
+    app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT', 'SecretOfMadTheMad2')
     app.config['SECURITY_PASSWORD_HASH'] = 'argon2'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -28,36 +38,38 @@ def create_app():
     app.config['SECURITY_SEND_PASSWORD_CHANGE_EMAIL'] = True
     app.config['SECURITY_EMAIL_SUBJECT_PASSWORD_CHANGE_NOTICE'] = "Your email has been changed"
 
-    app.config['JWT_SECRET_KEY'] = 'MadTheMad2'
+    # JWT Configuration
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'MadTheMad2')
     app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
-    app.config['JWT_COOKIE_SECURE'] = False
+    # Set to True in production (HTTPS)
+    app.config['JWT_COOKIE_SECURE'] = os.environ.get('ENVIRONMENT', 'development') == 'production'
     app.config['JWT_REFRESH_TOKEN_IN_COOKIE'] = True
     app.config['JWT_REFRESH_COOKIE_NAME'] = 'refresh_token'
     app.config['JWT_HEADER_NAME'] = 'Authorization'
     app.config['JWT_HEADER_TYPE'] = 'Bearer'
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
-    # TODO : configure for CSFR
     app.config['JWT_COOKIE_CSRF_PROTECT'] = False
     app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
     app.config['JWT_REFRESH_COOKIE_PATH'] = '/refresh'
 
+    # Redis Configuration - Use environment variable for production
+    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    
     app.config['CACHE_TYPE'] = 'redis'
-    app.config['CACHE_REDIS_PORT'] = 6379
-    app.config['CACHE_REDIS_DB'] = 0
-    app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
+    app.config['CACHE_REDIS_URL'] = f"{redis_url}/0"
     app.config['CACHE_DEFAULT_TIMEOUT'] = 1800
 
-    app.config['CELERY_BROKER_URL'] = 'redis://127.0.0.1:6379/1'
-    app.config['CELERY_RESULT_BACKEND'] = 'redis://127.0.0.1:6379/1'
+    app.config['CELERY_BROKER_URL'] = f"{redis_url}/1"
+    app.config['CELERY_RESULT_BACKEND'] = f"{redis_url}/1"
 
-    app.config['EXPORT_FOLDER'] = "/Users/nithesh-pt7363/Work/Platform/InfluencerSponsorship/export"
+    app.config['EXPORT_FOLDER'] = EXPORT_DIR
 
-    # logging.basicConfig(level=logging.INFO)
-
+    # CORS Configuration - Use environment variable for production
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
     cors = CORS(app, resources={
         r"/api/*": {
-            "origins": "http://localhost:5173",
+            "origins": allowed_origins,
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
@@ -66,11 +78,21 @@ def create_app():
 
     cache = Cache(app=app)
 
+    # Redis Client Connection
     try:
-        app.redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
+        # Parse Redis URL for connection
+        from urllib.parse import urlparse
+        parsed = urlparse(redis_url)
+        app.redis_client = redis.StrictRedis(
+            host=parsed.hostname or 'localhost',
+            port=parsed.port or 6379,
+            password=parsed.password,
+            db=0,
+            decode_responses=True
+        )
         app.redis_client.ping()
-    except redis.ConnectionError:
-        print("Could not connect to Redis. Please ensure that Redis is running.")
+    except redis.ConnectionError as e:
+        print(f"Could not connect to Redis: {e}. Please ensure that Redis is running.")
 
     jwt = JWTManager(app)
     app.jwt = jwt
@@ -91,29 +113,16 @@ def create_app():
         except Exception as e:
             print(f"Error during database initialization: {e}")
 
-    print(f"SQLite database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
-
-    # @app.before_request
-    # def handle_options():
-    #     if request.method == "OPTIONS":
-    #         response = make_response()
-    #         response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
-    #         response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-    #         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    #         response.headers.add("Access-Control-Allow-Credentials", "true")
-    #         return response
+    print(f"Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
     @app.before_request
     def load_roles_from_jwt():
         try:
             verify_jwt_in_request(optional=True)
             claims = get_jwt()
-            # print(claims)
             g.roles = claims.get("role", [])
         except Exception as e:
-
             g.roles = []
-
 
     @app.cli.command('reset-db')
     @click.confirmation_option(prompt='Are you sure you want to reset the database?')
